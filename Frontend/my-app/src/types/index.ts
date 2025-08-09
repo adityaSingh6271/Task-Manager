@@ -1,0 +1,103 @@
+export interface User {
+  id: string
+  name: string
+  email: string
+  avatar?: string
+}
+
+export interface Folder {
+  id: string
+  name: string
+  color: string
+  taskCount: number
+}
+
+export interface Task {
+  id: string
+  title: string
+  description?: string
+  status: "pending" | "in-progress" | "completed"
+  priority: "low" | "medium" | "high"
+  dueDate?: Date
+  tags: string[]
+  folderId: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CreateTaskData {
+  title: string
+  description?: string
+  priority: "low" | "medium" | "high"
+  dueDate?: Date
+  tags: string[]
+  folderId: string
+}export interface User {
+  id: string
+  name: string
+  email: string
+  avatar?: string
+}
+
+export interface Folder {
+  id: string
+  name: string
+  color: string
+  taskCount: number
+}
+
+export interface Task {
+  id: string
+  title: string
+  description?: string
+  status: "pending" | "in-progress" | "completed"
+  priority: "low" | "medium" | "high"
+  dueDate?: Date
+  tags: string[]
+  folderId: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CreateTaskData {
+  title: string
+  description?: string
+  priority: "low" | "medium" | "high"
+  dueDate?: Date
+  tags: string[]
+  folderId: string
+}
+
+export interface RegisterData {
+  email: string
+  mobile:string;
+  password: string
+  confirmPassword: string
+}
+
+export interface LoginData {
+  email: string
+  password: string
+}
+
+export interface OTPData {
+  mobile: string
+  otp?: string
+}
+
+
+export interface RegisterData {
+  email: string
+  password: string
+  confirmPassword: string
+}
+
+export interface LoginData {
+  email: string
+  password: string
+}
+
+export interface OTPData {
+  mobile: string
+  otp?: string
+}
