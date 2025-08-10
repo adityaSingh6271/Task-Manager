@@ -31,53 +31,76 @@ export default function LoginPage() {
     formState: { errors: otpErrors, isSubmitting: isOTPSubmitting },
   } = useForm<OTPData>()
 
-  const onLoginSubmit = async (data: LoginData) => {
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+const onLoginSubmit = async (data: LoginData) => {
+  try {
+    const res = await fetch("http://localhost:3000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      throw new Error(result.error || "Login failed");
+    }
+
+    toast({
+      title: "Welcome back!",
+      description: "You have successfully signed in.",
+    });
+
+    router.push("/dashboard");
+  } catch (error: any) {
+    toast({
+      title: "Login failed",
+      description: error.message || "Invalid credentials. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+
+
+const onOTPSubmit = async (data: OTPData) => {
+  try {
+    if (!otpSent) {
+      // Send OTP
+      await fetch("http://localhost:3000/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: data.mobile }),
+      });
+
+      setOtpSent(true);
+      toast({
+        title: "OTP sent!",
+        description: "Please check your mobile for the verification code.",
+      });
+    } else {
+      // Verify OTP
+      const res = await fetch("http://localhost:3000/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: data.mobile, otp: data.otp }),
+      });
+
+      if (!res.ok) throw new Error("Invalid OTP");
 
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
-      })
-
-      router.push("/dashboard")
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "Invalid credentials. Please try again.",
-        variant: "destructive",
-      })
+      });
+      router.push("/dashboard");
     }
+  } catch (error) {
+    toast({
+      title: "Authentication failed",
+      description: "Please try again.",
+      variant: "destructive",
+    });
   }
+};
 
-  const onOTPSubmit = async (data: OTPData) => {
-    try {
-      if (!otpSent) {
-        // Send OTP
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        setOtpSent(true)
-        toast({
-          title: "OTP sent!",
-          description: "Please check your mobile for the verification code.",
-        })
-      } else {
-        // Verify OTP
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        })
-        router.push("/dashboard")
-      }
-    } catch (error) {
-      toast({
-        title: "Authentication failed",
-        description: "Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
@@ -188,7 +211,7 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                <Button type="submit" className="w-full" disabled={isOTPSubmitting}>
+                <Button type="submit" className="w-full cursor-pointer" disabled={isOTPSubmitting}>
                   {isOTPSubmitting
                     ? otpSent
                       ? "Verifying..."
