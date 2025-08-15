@@ -3,6 +3,9 @@ import bcrypt from "bcryptjs";
 import { randomInt } from "crypto";
 import { Request, Response } from "express";
 import { sendSms } from "../lib/twilio";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export const register = async (req: Request, res: Response) => {
   const { email, mobile, password, name } = req.body;
@@ -57,8 +60,17 @@ export const login = async (req: Request, res: Response) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(400).json({ error: "Invalid credentials" });
 
+    if (!JWT_SECRET || typeof JWT_SECRET !== "string") {
+      return res.status(500).json({ error: "JWT secret is not configured" });
+    }
+
+    const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
+      expiresIn: "24h",
+    });
+
     return res.json({
       message: "Login successful",
+      token,
       user: { id: user.id, email: user.email, name: user.name },
     });
   } catch {

@@ -1,14 +1,12 @@
-"use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Folder, Menu, Plus, Search, Settings, X } from "lucide-react";
-import { mockFolders } from "@/lib/mock-data";
 import type { Folder as FolderType } from "@/types";
 import { FolderManager } from "./folder-manager";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useProfile } from "@/hooks/useProfile";
 
 interface SidebarProps {
   selectedFolder: string | null;
@@ -16,10 +14,19 @@ interface SidebarProps {
 }
 
 export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
-  const [folders, setFolders] = useState<FolderType[]>(mockFolders);
+  const { data } = useProfile();
+
+  // Use folders from API, fall back to empty array
+  const [folders, setFolders] = useState<FolderType[]>([]);
+
+  useEffect(() => {
+    if (data?.folders) {
+      setFolders(data.folders ?? []);
+    }
+  }, [data]);
+
   const [showFolderManager, setShowFolderManager] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const handleFolderUpdate = (updatedFolders: FolderType[]) => {
@@ -62,6 +69,7 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
                 Folders
               </h3>
               <Button
+              className="cursor-pointer"
                 size="sm"
                 variant="ghost"
                 onClick={() => setShowFolderManager(true)}
@@ -77,7 +85,7 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
                 className="w-full justify-between group"
                 onClick={() => {
                   onFolderSelect(folder.id);
-                  setIsSidebarOpen(false); // Close on mobile after selecting
+                  setIsSidebarOpen(false);
                 }}
               >
                 <div className="flex items-center">
@@ -111,7 +119,6 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
 
   return (
     <>
-      {/* Toggle Button for Mobile */}
       {isMobile && !isSidebarOpen && (
         <Button
           onClick={() => setIsSidebarOpen(true)}
@@ -121,8 +128,6 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
           <Menu className="w-6 h-6" />
         </Button>
       )}
-
-      {/* Sidebar */}
       {isMobile
         ? isSidebarOpen && (
             <div className="fixed inset-0 bg-black bg-opacity-50 z-40">

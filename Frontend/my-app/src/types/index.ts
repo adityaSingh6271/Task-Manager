@@ -101,3 +101,12 @@ export interface OTPData {
   mobile: string
   otp?: string
 }
+
+export interface ProfileData {
+  user: User;
+  folders: Folder[];
+  tasks: Task[];
+  registerData?: RegisterData;
+  loginData?: LoginData;
+  otpData?: OTPData;
+}

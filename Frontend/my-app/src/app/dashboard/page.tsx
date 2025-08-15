@@ -1,46 +1,58 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import { Header } from "@/components/dashboard/header"
-import { Sidebar } from "@/components/dashboard/sidebar"
-import { TaskList } from "@/components/dashboard/task-list"
-import { TaskForm } from "@/components/dashboard/task-form"
-import type { Task } from "@/types"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { Header } from "@/components/dashboard/header";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { TaskList } from "@/components/dashboard/task-list";
+import { TaskForm } from "@/components/dashboard/task-form";
+import type { Task } from "@/types";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function DashboardPage() {
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
-  const [showTaskForm, setShowTaskForm] = useState(false)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const { data, isLoading, error } = useProfile();
+  const tasks = data?.tasks ?? [];
+const folders = data?.folders ?? [];
 
   const handleEditTask = (task: Task) => {
-    setEditingTask(task)
-    setShowTaskForm(true)
-  }
+    setEditingTask(task);
+    setShowTaskForm(true);
+  };
 
   const handleTaskSave = (task: Task) => {
-    console.log("Task saved:", task)
-    setEditingTask(null)
-  }
+    console.log("Task saved:", task);
+    setEditingTask(null);
+  };
 
   const handleAddTask = () => {
-    setEditingTask(null)
-    setShowTaskForm(true)
-  }
+    setEditingTask(null);
+    setShowTaskForm(true);
+  };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <Header user={data?.user} isLoading={isLoading} />
 
       {/* Main Layout */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         <div className="lg:w-64 w-full border-r dark:border-gray-800">
-          <Sidebar selectedFolder={selectedFolder} onFolderSelect={setSelectedFolder} />
+          <Sidebar
+            selectedFolder={selectedFolder}
+            onFolderSelect={setSelectedFolder}
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <TaskList selectedFolder={selectedFolder} onEditTask={handleEditTask} />
+          <TaskList
+            selectedFolder={selectedFolder}
+            onEditTask={handleEditTask}
+            tasks={tasks}
+            folders={folders}
+          />
         </div>
       </div>
 
@@ -59,5 +71,5 @@ export default function DashboardPage() {
         onTaskSave={handleTaskSave}
       />
     </div>
-  )
+  );
 }

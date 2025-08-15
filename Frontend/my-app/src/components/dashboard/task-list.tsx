@@ -1,79 +1,100 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Calendar, Flag, MoreHorizontal, Search, Tag } from "lucide-react"
-import type { Task } from "@/types"
-import { mockTasks, mockFolders } from "@/lib/mock-data"
-import { format, isToday, isTomorrow, isThisWeek } from "date-fns"
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Calendar, Flag, MoreHorizontal, Search, Tag } from "lucide-react";
+import type { Task } from "@/types";
+import { format, isToday, isTomorrow, isThisWeek } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
-interface TaskListProps {
-  selectedFolder: string | null
-  onEditTask: (task: Task) => void
+interface Folder {
+  id: string;
+  name: string;
+  color?: string;
 }
 
-export function TaskList({ selectedFolder, onEditTask }: TaskListProps) {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState("all")
+interface TaskListProps {
+  selectedFolder: string | null;
+  onEditTask: (task: Task) => void;
+  tasks: Task[];
+  folders: Folder[]; // <-- Add this
+}
+
+export function TaskList({
+  selectedFolder,
+  onEditTask,
+  tasks: initialTasks,
+  folders,
+}: TaskListProps) {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
 
   const filteredTasks = tasks.filter((task) => {
-    if (selectedFolder && task.folderId !== selectedFolder) return false
-    if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false
+    if (selectedFolder && task.folderId !== selectedFolder) return false;
+    if (
+      searchQuery &&
+      !task.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+      return false;
 
     switch (activeTab) {
       case "today":
-        return task.dueDate && isToday(task.dueDate)
+        return task.dueDate && isToday(task.dueDate);
       case "upcoming":
-        return task.dueDate && (isTomorrow(task.dueDate) || isThisWeek(task.dueDate))
+        return (
+          task.dueDate && (isTomorrow(task.dueDate) || isThisWeek(task.dueDate))
+        );
       case "completed":
-        return task.status === "completed"
+        return task.status === "completed";
       default:
-        return true
+        return true;
     }
-  })
+  });
 
   const toggleTaskStatus = (taskId: string) => {
     setTasks(
       tasks.map((task) =>
         task.id === taskId
-          ? { ...task, status: task.status === "completed" ? "pending" : "completed" }
-          : task,
-      ),
-    )
-  }
+          ? {
+              ...task,
+              status: task.status === "completed" ? "pending" : "completed",
+            }
+          : task
+      )
+    );
+  };
 
   const deleteTask = (taskId: string) => {
-    setTasks(tasks.filter((task) => task.id !== taskId))
-  }
+    setTasks(tasks.filter((task) => task.id !== taskId));
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
       case "low":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
-  }
+  };
 
   const getFolderName = (folderId: string) => {
-    return mockFolders.find((f) => f.id === folderId)?.name || "Unknown"
-  }
+    return folders.find((f) => f.id === folderId)?.name || "Unknown";
+  };
 
   return (
     <div className="flex-1 p-4 sm:p-6">
@@ -113,7 +134,10 @@ export function TaskList({ selectedFolder, onEditTask }: TaskListProps) {
                 </Card>
               ) : (
                 filteredTasks.map((task) => (
-                  <Card key={task.id} className="hover:shadow-md transition-shadow">
+                  <Card
+                    key={task.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 space-y-3 sm:space-y-0">
                         <Checkbox
@@ -148,8 +172,15 @@ export function TaskList({ selectedFolder, onEditTask }: TaskListProps) {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => onEditTask(task)}>Edit</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => deleteTask(task.id)} className="text-red-600">
+                                <DropdownMenuItem
+                                  onClick={() => onEditTask(task)}
+                                >
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => deleteTask(task.id)}
+                                  className="text-red-600"
+                                >
                                   Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -174,7 +205,9 @@ export function TaskList({ selectedFolder, onEditTask }: TaskListProps) {
                                 <div
                                   className="w-3 h-3 rounded-full mr-1"
                                   style={{
-                                    backgroundColor: mockFolders.find((f) => f.id === task.folderId)?.color,
+                                    backgroundColor: folders.find(
+                                      (f) => f.id === task.folderId
+                                    )?.color,
                                   }}
                                 />
                                 {getFolderName(task.folderId)}
@@ -185,7 +218,11 @@ export function TaskList({ selectedFolder, onEditTask }: TaskListProps) {
                               <div className="flex items-center space-x-1">
                                 <Tag className="w-3 h-3 text-gray-400" />
                                 {task.tags.slice(0, 2).map((tag) => (
-                                  <Badge key={tag} variant="outline" className="text-xs">
+                                  <Badge
+                                    key={tag}
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
                                     {tag}
                                   </Badge>
                                 ))}
@@ -208,5 +245,5 @@ export function TaskList({ selectedFolder, onEditTask }: TaskListProps) {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }

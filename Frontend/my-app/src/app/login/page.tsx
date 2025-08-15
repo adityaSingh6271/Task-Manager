@@ -12,12 +12,15 @@ import type { LoginData, OTPData } from "@/types"
 import Link from "next/link"
 import { Eye, EyeOff, Zap } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useDispatch } from "react-redux"
+import { setToken } from "@/store/authSlice"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
+  const dispatch = useDispatch();
 
   const {
     register: registerLogin,
@@ -33,7 +36,7 @@ export default function LoginPage() {
 
 const onLoginSubmit = async (data: LoginData) => {
   try {
-    const res = await fetch("http://localhost:3000/api/auth/login", {
+    const res = await fetch("http://localhost:5000/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -44,6 +47,8 @@ const onLoginSubmit = async (data: LoginData) => {
     if (!res.ok) {
       throw new Error(result.error || "Login failed");
     }
+
+    dispatch(setToken(result.token))
 
     toast({
       title: "Welcome back!",
@@ -65,7 +70,7 @@ const onOTPSubmit = async (data: OTPData) => {
   try {
     if (!otpSent) {
       // Send OTP
-      await fetch("http://localhost:3000/api/auth/send-otp", {
+      await fetch("http://localhost:5000/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mobile: data.mobile }),
@@ -78,7 +83,7 @@ const onOTPSubmit = async (data: OTPData) => {
       });
     } else {
       // Verify OTP
-      const res = await fetch("http://localhost:3000/api/auth/verify-otp", {
+      const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mobile: data.mobile, otp: data.otp }),

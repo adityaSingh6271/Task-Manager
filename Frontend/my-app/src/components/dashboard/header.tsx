@@ -11,11 +11,20 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Moon, Sun, LogOut, User, Settings, Zap } from "lucide-react"
 import { useTheme } from "next-themes"
-import { mockUser } from "@/lib/mock-data"
+
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
-export function Header() {
+interface HeaderProps {
+  user?: {
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  isLoading?: boolean;
+}
+
+export function Header({ user, isLoading }: HeaderProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const { toast } = useToast()
@@ -41,22 +50,28 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+          <Button className="cursor-pointer" variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Button>
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+             <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="relative h-8 w-8 rounded-full cursor-pointer"
+              >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={mockUser.avatar || "/placeholder.svg"} alt={mockUser.name} />
+                  <AvatarImage
+                    src={user?.avatar || "/placeholder.svg"}
+                    alt={user?.name || "User"}
+                  />
                   <AvatarFallback>
-                    {mockUser.name
-                      .split(" ")
+                    {user?.name
+                      ?.split(" ")
                       .map((n) => n[0])
-                      .join("")}
+                      .join("") || "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -64,8 +79,8 @@ export function Header() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1 leading-none">
-                  <p className="font-medium">{mockUser.name}</p>
-                  <p className="w-[200px] truncate text-sm text-muted-foreground">{mockUser.email}</p>
+                  <p className="font-medium">{user?.name}</p>
+                  <p className="w-[200px] truncate text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
               <DropdownMenuSeparator />

@@ -174,7 +174,7 @@ export function FolderManager({ open, onOpenChange, folders, onFoldersUpdate }: 
                         <button
                           key={color}
                           type="button"
-                          className={`w-8 h-8 rounded-full border-2 ${
+                          className={`w-8 h-8 rounded-full border-2 cursor-pointer ${
                             watchedColor === color ? "border-gray-900 dark:border-white" : "border-gray-300"
                           }`}
                           style={{ backgroundColor: color }}
@@ -185,7 +185,7 @@ export function FolderManager({ open, onOpenChange, folders, onFoldersUpdate }: 
                   </div>
 
                   <div className="flex space-x-2">
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button className="cursor-pointer" type="submit" disabled={isSubmitting}>
                       {isSubmitting
                         ? editingFolder
                           ? "Updating..."
