@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Calendar, Flag, MoreHorizontal, Search, Tag } from "lucide-react";
 import type { Task } from "@/types";
-import { format, isToday, isTomorrow, isThisWeek } from "date-fns";
+import { format, isToday, isTomorrow, isThisWeek, parseISO } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,58 +27,64 @@ interface TaskListProps {
   selectedFolder: string | null;
   onEditTask: (task: Task) => void;
   tasks: Task[];
-  folders: Folder[]; // <-- Add this
+  folders: Folder[];
 }
 
 export function TaskList({
   selectedFolder,
   onEditTask,
-  tasks: initialTasks,
+  tasks,
   folders,
 }: TaskListProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  const filteredTasks = tasks.filter((task) => {
-    if (selectedFolder && task.folderId !== selectedFolder) return false;
-    if (
-      searchQuery &&
-      !task.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-      return false;
+  console.log(tasks, "tasks ")
 
-    switch (activeTab) {
-      case "today":
-        return task.dueDate && isToday(task.dueDate);
-      case "upcoming":
-        return (
-          task.dueDate && (isTomorrow(task.dueDate) || isThisWeek(task.dueDate))
-        );
-      case "completed":
-        return task.status === "completed";
-      default:
-        return true;
-    }
-  });
+  // ✅ Normalize tasks
+  const normalizedTasks = useMemo(
+    () =>
+      tasks.map((task) => {
+        const folder = folders.find((f) => f.id === task.folderId);
+        return {
+          ...task,
+          dueDate: task.dueDate ? parseISO(task.dueDate as any) : undefined,
+          folderName: folder?.name ?? "Unknown",
+          folderColor: folder?.color ?? "#9CA3AF", // fallback gray
+        };
+      }),
+    [tasks, folders]
+  );
 
-  const toggleTaskStatus = (taskId: string) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              status: task.status === "completed" ? "pending" : "completed",
-            }
-          : task
-      )
-    );
-  };
+  // ✅ Filtering logic
+  const filteredTasks = useMemo(
+    () =>
+      normalizedTasks.filter((task) => {
+        if (selectedFolder && task.folderId !== selectedFolder) return false;
+        if (
+          searchQuery &&
+          !task.title.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+          return false;
 
-  const deleteTask = (taskId: string) => {
-    setTasks(tasks.filter((task) => task.id !== taskId));
-  };
+        switch (activeTab) {
+          case "today":
+            return task.dueDate && isToday(task.dueDate);
+          case "upcoming":
+            return (
+              task.dueDate &&
+              (isTomorrow(task.dueDate) || isThisWeek(task.dueDate))
+            );
+          case "completed":
+            return task.status === "completed";
+          default:
+            return true;
+        }
+      }),
+    [normalizedTasks, searchQuery, activeTab, selectedFolder]
+  );
 
+  // ✅ Priority badge colors
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
@@ -92,16 +98,14 @@ export function TaskList({
     }
   };
 
-  const getFolderName = (folderId: string) => {
-    return folders.find((f) => f.id === folderId)?.name || "Unknown";
-  };
-
   return (
     <div className="flex-1 p-4 sm:p-6">
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-            {selectedFolder ? getFolderName(selectedFolder) : "All Tasks"}
+            {selectedFolder
+              ? folders.find((f) => f.id === selectedFolder)?.name ?? "Unknown"
+              : "All Tasks"}
           </h2>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -142,7 +146,10 @@ export function TaskList({
                       <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 space-y-3 sm:space-y-0">
                         <Checkbox
                           checked={task.status === "completed"}
-                          onCheckedChange={() => toggleTaskStatus(task.id)}
+                          // ⚡ You can later wire this to backend update
+                          onCheckedChange={() =>
+                            console.log("toggle status", task.id)
+                          }
                           className="mt-1"
                         />
 
@@ -178,7 +185,9 @@ export function TaskList({
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => deleteTask(task.id)}
+                                  onClick={() =>
+                                    console.log("delete task", task.id)
+                                  }
                                   className="text-red-600"
                                 >
                                   Delete
@@ -205,12 +214,10 @@ export function TaskList({
                                 <div
                                   className="w-3 h-3 rounded-full mr-1"
                                   style={{
-                                    backgroundColor: folders.find(
-                                      (f) => f.id === task.folderId
-                                    )?.color,
+                                    backgroundColor: task.folderColor,
                                   }}
                                 />
-                                {getFolderName(task.folderId)}
+                                {task.folderName}
                               </div>
                             )}
 

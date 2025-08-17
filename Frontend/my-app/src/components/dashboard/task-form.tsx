@@ -1,35 +1,60 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useEffect, useState } from "react"
-import { useForm, Controller } from "react-hook-form"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Badge } from "@/components/ui/badge"
-import { CalendarIcon, X } from "lucide-react"
-import { format } from "date-fns"
-import type { CreateTaskData, Task } from "@/types"
-import { mockFolders } from "@/lib/mock-data"
-import { useToast } from "@/hooks/use-toast"
+import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { CalendarIcon, X } from "lucide-react";
+import { format } from "date-fns";
+import type { CreateTaskData, Folder, Task } from "@/types";
+
+import { useToast } from "@/hooks/use-toast";
+import { useCreateTask } from "@/hooks/use-create-task";
+import { useUpdateTask } from "@/hooks/useUpdateTask";
 
 interface TaskFormProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  task?: Task | null
-  onTaskSave: (task: Task) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  task?: Task | null;
+  onTaskSave: (task: Task) => void;
+  folders: Folder[];
 }
 
-export function TaskForm({ open, onOpenChange, task, onTaskSave }: TaskFormProps) {
-  const [tags, setTags] = useState<string[]>([])
-  const [tagInput, setTagInput] = useState("")
-  const { toast } = useToast()
+export function TaskForm({
+  open,
+  onOpenChange,
+  task,
+  onTaskSave,
+  folders,
+}: TaskFormProps) {
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const { toast } = useToast();
 
   const {
     register,
@@ -39,87 +64,99 @@ export function TaskForm({ open, onOpenChange, task, onTaskSave }: TaskFormProps
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<CreateTaskData>()
+  } = useForm<CreateTaskData>();
 
-  const watchedDueDate = watch("dueDate")
+  // const watchedDueDate = watch("dueDate");
+  const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
 
   useEffect(() => {
     if (task) {
       // Editing existing task
-      setValue("title", task.title)
-      setValue("description", task.description || "")
-      setValue("priority", task.priority)
-      setValue("dueDate", task.dueDate)
-      setValue("folderId", task.folderId)
-      setTags(task.tags)
+      setValue("title", task.title);
+      setValue("description", task.description || "");
+      setValue("priority", task.priority);
+      setValue("dueDate", task.dueDate);
+      setValue("folderId", task.folderId);
+      setTags(task.tags);
     } else {
       // Creating new task
-      reset()
-      setTags([])
-      setTagInput("")
+      reset();
+      setTags([]);
+      setTagInput("");
     }
-  }, [task, setValue, reset])
+  }, [task, setValue, reset]);
 
   const onSubmit = async (data: CreateTaskData) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      if (task) {
+        // 🔹 Update existing task
+        await updateTask.mutateAsync({
+          id: task.id,
+          data: {
+            ...data,
+            tags,
+          },
+        });
 
-      const taskData: Task = {
-        id: task?.id || Date.now().toString(),
-        ...data,
-        tags,
-        status: task?.status || "pending",
-        createdAt: task?.createdAt || new Date(),
-        updatedAt: new Date(),
+        toast({
+          title: "Task updated",
+          description: "Your task has been updated successfully.",
+        });
+      } else {
+        // 🔹 Create new task
+        await createTask.mutateAsync({
+          ...data,
+          tags,
+        });
+
+        toast({
+          title: "Task created",
+          description: "Your new task has been created successfully.",
+        });
       }
 
-      onTaskSave(taskData)
-
-      toast({
-        title: task ? "Task updated" : "Task created",
-        description: task ? "Your task has been updated successfully." : "Your new task has been created successfully.",
-      })
-
-      onOpenChange(false)
-      reset()
-      setTags([])
-      setTagInput("")
+      // cleanup
+      onOpenChange(false);
+      reset();
+      setTags([]);
+      setTagInput("");
     } catch (error) {
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const addTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()])
-      setTagInput("")
+      setTags([...tags, tagInput.trim()]);
+      setTagInput("");
     }
-  }
+  };
 
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove))
-  }
+    setTags(tags.filter((tag) => tag !== tagToRemove));
+  };
 
   const handleTagInputKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      e.preventDefault()
-      addTag()
+      e.preventDefault();
+      addTag();
     }
-  }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xs md:max-w-sm lg:max-w-md p-4 overflow-y-auto">
-
         <SheetHeader>
           <SheetTitle>{task ? "Edit Task" : "Create New Task"}</SheetTitle>
           <SheetDescription>
-            {task ? "Make changes to your task here." : "Add a new task to your list. Fill in the details below."}
+            {task
+              ? "Make changes to your task here."
+              : "Add a new task to your list. Fill in the details below."}
           </SheetDescription>
         </SheetHeader>
 
@@ -131,7 +168,9 @@ export function TaskForm({ open, onOpenChange, task, onTaskSave }: TaskFormProps
               placeholder="Enter task title"
               {...register("title", { required: "Title is required" })}
             />
-            {errors.title && <p className="text-sm text-red-600">{errors.title.message}</p>}
+            {errors.title && (
+              <p className="text-sm text-red-600">{errors.title.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -157,14 +196,18 @@ export function TaskForm({ open, onOpenChange, task, onTaskSave }: TaskFormProps
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="LOW">LOW</SelectItem>
+                      <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                      <SelectItem value="HIGH">HIGH</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               />
-              {errors.priority && <p className="text-sm text-red-600">{errors.priority.message}</p>}
+              {errors.priority && (
+                <p className="text-sm text-red-600">
+                  {errors.priority.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -179,10 +222,13 @@ export function TaskForm({ open, onOpenChange, task, onTaskSave }: TaskFormProps
                       <SelectValue placeholder="Select folder" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockFolders.map((folder) => (
+                      {folders.map((folder) => (
                         <SelectItem key={folder.id} value={folder.id}>
                           <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: folder.color }} />
+                            <div
+                              className="w-3 h-3 rounded-full mr-2"
+                              style={{ backgroundColor: folder.color }}
+                            />
                             {folder.name}
                           </div>
                         </SelectItem>
@@ -191,7 +237,11 @@ export function TaskForm({ open, onOpenChange, task, onTaskSave }: TaskFormProps
                   </Select>
                 )}
               />
-              {errors.folderId && <p className="text-sm text-red-600">{errors.folderId.message}</p>}
+              {errors.folderId && (
+                <p className="text-sm text-red-600">
+                  {errors.folderId.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -200,18 +250,40 @@ export function TaskForm({ open, onOpenChange, task, onTaskSave }: TaskFormProps
             <Controller
               name="dueDate"
               control={control}
-              render={({ field }) => (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal bg-transparent">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                  </PopoverContent>
-                </Popover>
+              rules={{ required: "Due date is required" }}
+              render={({ field, fieldState }) => (
+                <div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal bg-transparent"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* ✅ Show error message */}
+                  {fieldState.error && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </div>
               )}
             />
           </div>
@@ -232,9 +304,16 @@ export function TaskForm({ open, onOpenChange, task, onTaskSave }: TaskFormProps
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
                     {tag}
-                    <X className="w-3 h-3 cursor-pointer" onClick={() => removeTag(tag)} />
+                    <X
+                      className="w-3 h-3 cursor-pointer"
+                      onClick={() => removeTag(tag)}
+                    />
                   </Badge>
                 ))}
               </div>
@@ -242,16 +321,26 @@ export function TaskForm({ open, onOpenChange, task, onTaskSave }: TaskFormProps
           </div>
 
           <div className="flex space-x-2 pt-4">
-            <Button type="submit" disabled={isSubmitting} className="flex-1">
-              {isSubmitting ? (task ? "Updating..." : "Creating...") : task ? "Update Task" : "Create Task"}
+            <Button  type="submit" disabled={isSubmitting} className="flex-1 cursor-pointer">
+              {isSubmitting
+                ? task
+                  ? "Updating..."
+                  : "Creating..."
+                : task
+                ? "Update Task"
+                : "Create Task"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="flex-1"
+            >
               Cancel
             </Button>
           </div>
         </form>
       </SheetContent>
     </Sheet>
-  )
+  );
 }
-    

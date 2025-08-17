@@ -1,111 +1,115 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/hooks/use-toast"
-import type { LoginData, OTPData } from "@/types"
-import Link from "next/link"
-import { Eye, EyeOff, Zap } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useDispatch } from "react-redux"
-import { setToken } from "@/store/authSlice"
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import type { LoginData, OTPData } from "@/types";
+import Link from "next/link";
+import { Eye, EyeOff, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import setToken, { setAuth } from "@/store/authSlice";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [otpSent, setOtpSent] = useState(false)
-  const { toast } = useToast()
-  const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
   const dispatch = useDispatch();
 
   const {
     register: registerLogin,
     handleSubmit: handleLoginSubmit,
     formState: { errors: loginErrors, isSubmitting: isLoginSubmitting },
-  } = useForm<LoginData>()
+  } = useForm<LoginData>();
 
   const {
     register: registerOTP,
     handleSubmit: handleOTPSubmit,
     formState: { errors: otpErrors, isSubmitting: isOTPSubmitting },
-  } = useForm<OTPData>()
+  } = useForm<OTPData>();
 
-const onLoginSubmit = async (data: LoginData) => {
-  try {
-    const res = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-
-    const result = await res.json();
-
-    if (!res.ok) {
-      throw new Error(result.error || "Login failed");
-    }
-
-    dispatch(setToken(result.token))
-
-    toast({
-      title: "Welcome back!",
-      description: "You have successfully signed in.",
-    });
-
-    router.push("/dashboard");
-  } catch (error: any) {
-    toast({
-      title: "Login failed",
-      description: error.message || "Invalid credentials. Please try again.",
-      variant: "destructive",
-    });
-  }
-};
-
-
-const onOTPSubmit = async (data: OTPData) => {
-  try {
-    if (!otpSent) {
-      // Send OTP
-      await fetch("http://localhost:5000/api/auth/send-otp", {
+  const onLoginSubmit = async (data: LoginData) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile: data.mobile }),
+        body: JSON.stringify(data),
       });
 
-      setOtpSent(true);
-      toast({
-        title: "OTP sent!",
-        description: "Please check your mobile for the verification code.",
-      });
-    } else {
-      // Verify OTP
-      const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile: data.mobile, otp: data.otp }),
-      });
+      const result = await res.json();
 
-      if (!res.ok) throw new Error("Invalid OTP");
+      if (!res.ok) {
+        throw new Error(result.error || "Login failed");
+      }
+
+      dispatch(setAuth({ token: result.token, user: result.user }));
 
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
-      router.push("/dashboard");
-    }
-  } catch (error) {
-    toast({
-      title: "Authentication failed",
-      description: "Please try again.",
-      variant: "destructive",
-    });
-  }
-};
 
+      router.push("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid credentials. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const onOTPSubmit = async (data: OTPData) => {
+    try {
+      if (!otpSent) {
+        // Send OTP
+        await fetch("http://localhost:5000/api/auth/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mobile: data.mobile }),
+        });
+
+        setOtpSent(true);
+        toast({
+          title: "OTP sent!",
+          description: "Please check your mobile for the verification code.",
+        });
+      } else {
+        // Verify OTP
+        const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mobile: data.mobile, otp: data.otp }),
+        });
+
+        if (!res.ok) throw new Error("Invalid OTP");
+
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
+        });
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      toast({
+        title: "Authentication failed",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
@@ -128,7 +132,10 @@ const onOTPSubmit = async (data: OTPData) => {
             </TabsList>
 
             <TabsContent value="email" className="space-y-4">
-              <form onSubmit={handleLoginSubmit(onLoginSubmit)} className="space-y-4">
+              <form
+                onSubmit={handleLoginSubmit(onLoginSubmit)}
+                className="space-y-4"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -143,7 +150,11 @@ const onOTPSubmit = async (data: OTPData) => {
                       },
                     })}
                   />
-                  {loginErrors.email && <p className="text-sm text-red-600">{loginErrors.email.message}</p>}
+                  {loginErrors.email && (
+                    <p className="text-sm text-red-600">
+                      {loginErrors.email.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -164,20 +175,35 @@ const onOTPSubmit = async (data: OTPData) => {
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
-                  {loginErrors.password && <p className="text-sm text-red-600">{loginErrors.password.message}</p>}
+                  {loginErrors.password && (
+                    <p className="text-sm text-red-600">
+                      {loginErrors.password.message}
+                    </p>
+                  )}
                 </div>
 
-                <Button type="submit" className="w-full cursor-pointer" disabled={isLoginSubmitting}>
+                <Button
+                  type="submit"
+                  className="w-full cursor-pointer"
+                  disabled={isLoginSubmitting}
+                >
                   {isLoginSubmitting ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
             </TabsContent>
 
             <TabsContent value="otp" className="space-y-4">
-              <form onSubmit={handleOTPSubmit(onOTPSubmit)} className="space-y-4">
+              <form
+                onSubmit={handleOTPSubmit(onOTPSubmit)}
+                className="space-y-4"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="mobile">Mobile Number</Label>
                   <Input
@@ -193,7 +219,11 @@ const onOTPSubmit = async (data: OTPData) => {
                       },
                     })}
                   />
-                  {otpErrors.mobile && <p className="text-sm text-red-600">{otpErrors.mobile.message}</p>}
+                  {otpErrors.mobile && (
+                    <p className="text-sm text-red-600">
+                      {otpErrors.mobile.message}
+                    </p>
+                  )}
                 </div>
 
                 {otpSent && (
@@ -212,18 +242,26 @@ const onOTPSubmit = async (data: OTPData) => {
                         },
                       })}
                     />
-                    {otpErrors.otp && <p className="text-sm text-red-600">{otpErrors.otp.message}</p>}
+                    {otpErrors.otp && (
+                      <p className="text-sm text-red-600">
+                        {otpErrors.otp.message}
+                      </p>
+                    )}
                   </div>
                 )}
 
-                <Button type="submit" className="w-full cursor-pointer" disabled={isOTPSubmitting}>
+                <Button
+                  type="submit"
+                  className="w-full cursor-pointer"
+                  disabled={isOTPSubmitting}
+                >
                   {isOTPSubmitting
                     ? otpSent
                       ? "Verifying..."
                       : "Sending OTP..."
                     : otpSent
-                      ? "Verify OTP"
-                      : "Send OTP"}
+                    ? "Verify OTP"
+                    : "Send OTP"}
                 </Button>
 
                 {otpSent && (
@@ -251,5 +289,5 @@ const onOTPSubmit = async (data: OTPData) => {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

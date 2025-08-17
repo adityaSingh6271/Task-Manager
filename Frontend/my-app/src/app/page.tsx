@@ -20,10 +20,10 @@ export default function LandingPage() {
           </div>
           <div className="space-x-4">
             <Link href="/login">
-              <Button variant="ghost">Login</Button>
+              <Button className="cursor-pointer" variant="ghost">Login</Button>
             </Link>
             <Link href="/register">
-              <Button>Get Started</Button>
+              <Button className="cursor-pointer">Get Started</Button>
             </Link>
           </div>
         </nav>

@@ -7,7 +7,7 @@ import { Header } from "@/components/dashboard/header";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TaskList } from "@/components/dashboard/task-list";
 import { TaskForm } from "@/components/dashboard/task-form";
-import type { Task } from "@/types";
+import type { Task, Folder } from "@/types";
 import { useProfile } from "@/hooks/useProfile";
 
 export default function DashboardPage() {
@@ -15,8 +15,11 @@ export default function DashboardPage() {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const { data, isLoading, error } = useProfile();
-  const tasks = data?.tasks ?? [];
-const folders = data?.folders ?? [];
+
+  const folders = data?.folders ?? [];
+  const tasks = folders.flatMap((folder) => folder.tasks ?? []);
+
+  console.log(data, "data");
 
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
@@ -58,7 +61,7 @@ const folders = data?.folders ?? [];
 
       {/* Floating Add Button */}
       <Button
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg lg:hidden"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg cursor-pointer"
         onClick={handleAddTask}
       >
         <Plus className="w-6 h-6" />
@@ -69,6 +72,7 @@ const folders = data?.folders ?? [];
         onOpenChange={setShowTaskForm}
         task={editingTask}
         onTaskSave={handleTaskSave}
+        folders={data?.folders ?? []}
       />
     </div>
   );

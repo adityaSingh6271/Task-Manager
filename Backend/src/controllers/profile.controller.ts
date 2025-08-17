@@ -21,46 +21,41 @@ export const getProfileData = async (req: AuthRequest, res: Response) => {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Fetch folders with taskCount (count tasks per folder)
+    // Fetch folders with tasks
     const folders = await prisma.folder.findMany({
       where: { userId },
       select: {
         id: true,
         name: true,
         color: true,
-        _count: { select: { tasks: true } },
+        tasks: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            status: true,
+            priority: true,
+            dueDate: true,
+            tags: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
     });
 
-    // Map folders to include taskCount
+    // Transform folders to add taskCount
     const mappedFolders = folders.map(f => ({
       id: f.id,
       name: f.name,
       color: f.color,
-      taskCount: f._count.tasks,
+      taskCount: f.tasks.length,
+      tasks: f.tasks,
     }));
-
-    // Fetch tasks
-    const tasks = await prisma.task.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        status: true,
-        priority: true,
-        dueDate: true,
-        tags: true,
-        folderId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
 
     res.json({
       user,
       folders: mappedFolders,
-      tasks,
     });
   } catch (error) {
     console.error("Profile fetch error:", error);
