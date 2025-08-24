@@ -18,7 +18,7 @@ export const useUpdateTask = () => {
       data: Partial<Omit<Task, "id" | "createdAt" | "updatedAt">>;
     }) => {
       const res = await api.put<Task>(
-        `/tasks/update/${id}`,
+        `/tasks/${id}`,
         data,
         {
           headers: {

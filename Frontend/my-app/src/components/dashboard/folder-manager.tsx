@@ -20,6 +20,7 @@ import { useCreateFolder } from "@/hooks/use-create-folder";
 import { useUpdateFolder } from "@/hooks/useUpdateFolder";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { useDeleteFolder } from "@/hooks/useDeleteFolder";
 
 interface FolderManagerProps {
   open: boolean;
@@ -66,6 +67,7 @@ export function FolderManager({
   const { mutateAsync: updateFolder } = useUpdateFolder();
   const { mutateAsync: createFolder } = useCreateFolder();
   const userId = useSelector((state: RootState) => state.auth.user?.id);
+  const deleteFolderMutation = useDeleteFolder()
 
   const {
     register,
@@ -130,14 +132,29 @@ const onSubmit = async (data: FolderFormData) => {
     setShowForm(true);
   };
 
-  const handleDelete = (folderId: string) => {
-    const updatedFolders = folders.filter((folder) => folder.id !== folderId);
-    onFoldersUpdate(updatedFolders);
-    toast({
-      title: "Folder deleted",
-      description: "The folder has been deleted successfully.",
-    });
-  };
+const handleDelete = (folderId: string) => {
+  deleteFolderMutation.mutate(
+    { id: folderId },
+    {
+      onSuccess: () => {
+        const updatedFolders = folders.filter((folder) => folder.id !== folderId);
+        onFoldersUpdate(updatedFolders);
+
+        toast({
+          title: "Folder deleted",
+          description: "The folder has been deleted successfully.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Error deleting folder",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    }
+  );
+}
 
   const handleAddNew = () => {
     setEditingFolder(null);

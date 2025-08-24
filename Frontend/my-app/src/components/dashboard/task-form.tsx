@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,6 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import type { CreateTaskData, Folder, Task } from "@/types";
-
 import { useToast } from "@/hooks/use-toast";
 import { useCreateTask } from "@/hooks/use-create-task";
 import { useUpdateTask } from "@/hooks/useUpdateTask";
@@ -40,18 +38,13 @@ import { useUpdateTask } from "@/hooks/useUpdateTask";
 interface TaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  task?: Task | null;
+  task?: (Task & { folderId?: string }) | null; 
   onTaskSave: (task: Task) => void;
   folders: Folder[];
+  taskFolderId: string
 }
 
-export function TaskForm({
-  open,
-  onOpenChange,
-  task,
-  onTaskSave,
-  folders,
-}: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, task, folders }: TaskFormProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const { toast } = useToast();
@@ -62,11 +55,9 @@ export function TaskForm({
     control,
     reset,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<CreateTaskData>();
 
-  // const watchedDueDate = watch("dueDate");
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
 
@@ -77,8 +68,9 @@ export function TaskForm({
       setValue("description", task.description || "");
       setValue("priority", task.priority);
       setValue("dueDate", task.dueDate);
+      // Now task will have folderId from the TaskList component
       setValue("folderId", task.folderId);
-      setTags(task.tags);
+      setTags(task.tags || []);
     } else {
       // Creating new task
       reset();
@@ -253,11 +245,12 @@ export function TaskForm({
               rules={{ required: "Due date is required" }}
               render={({ field, fieldState }) => (
                 <div>
-                  <Popover>
+                  <Popover modal={true}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className="w-full justify-start text-left font-normal bg-transparent"
+                        type="button"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {field.value ? (
@@ -267,17 +260,18 @@ export function TaskForm({
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                        }}
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
 
-                  {/* ✅ Show error message */}
                   {fieldState.error && (
                     <p className="text-red-500 text-sm mt-1">
                       {fieldState.error.message}
@@ -321,7 +315,11 @@ export function TaskForm({
           </div>
 
           <div className="flex space-x-2 pt-4">
-            <Button  type="submit" disabled={isSubmitting} className="flex-1 cursor-pointer">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 cursor-pointer"
+            >
               {isSubmitting
                 ? task
                   ? "Updating..."

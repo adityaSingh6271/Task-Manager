@@ -10,6 +10,7 @@ export interface Folder {
   name: string;
   color: string;
   taskCount: number;
+  tasks?: Task[];
 }
 
 export interface Task {

@@ -9,20 +9,24 @@ import { TaskList } from "@/components/dashboard/task-list";
 import { TaskForm } from "@/components/dashboard/task-form";
 import type { Task, Folder } from "@/types";
 import { useProfile } from "@/hooks/useProfile";
+import { useDeleteTask } from "@/hooks/useDeleteTask";
 
 export default function DashboardPage() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTaskFolderId, setEditingTaskFolderId] = useState<string>("");
   const { data, isLoading, error } = useProfile();
 
   const folders = data?.folders ?? [];
   const tasks = folders.flatMap((folder) => folder.tasks ?? []);
+  const { mutate: deleteTask } = useDeleteTask();
 
   console.log(data, "data");
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = (task: Task, folderId: string) => {
     setEditingTask(task);
+    setEditingTaskFolderId(folderId);
     setShowTaskForm(true);
   };
 
@@ -34,6 +38,17 @@ export default function DashboardPage() {
   const handleAddTask = () => {
     setEditingTask(null);
     setShowTaskForm(true);
+  };
+
+  const handleDeleteTask = (task: Task) => {
+    deleteTask(task.id, {
+      onSuccess: () => {
+        console.log("Task deleted:", task.id);
+      },
+      onError: () => {
+        console.error("Failed to delete task");
+      },
+    });
   };
 
   return (
@@ -53,6 +68,7 @@ export default function DashboardPage() {
           <TaskList
             selectedFolder={selectedFolder}
             onEditTask={handleEditTask}
+            onDeleteTask={handleDeleteTask}
             tasks={tasks}
             folders={folders}
           />
@@ -71,6 +87,7 @@ export default function DashboardPage() {
         open={showTaskForm}
         onOpenChange={setShowTaskForm}
         task={editingTask}
+        taskFolderId={editingTaskFolderId}
         onTaskSave={handleTaskSave}
         folders={data?.folders ?? []}
       />

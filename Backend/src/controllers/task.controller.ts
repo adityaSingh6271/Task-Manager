@@ -87,3 +87,27 @@ export const updateTask = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to update task" });
   }
 };
+
+
+// Delete task
+export const deleteTask = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params; // task id from URL
+
+    // Delete by ID
+    await prisma.task.delete({
+      where: { id },
+    });
+
+    res.status(200).json({ message: "Task deleted successfully" });
+  } catch (error: any) {
+    console.error(error);
+
+    // Prisma throws a specific error if record not found
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    res.status(500).json({ error: "Failed to delete task" });
+  }
+};

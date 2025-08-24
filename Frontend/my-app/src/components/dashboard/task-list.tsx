@@ -16,50 +16,81 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DeleteTaskDialog } from "../DeleteTaskDialog";
 
 interface Folder {
   id: string;
   name: string;
   color?: string;
+  tasks?: Task[]; 
 }
 
 interface TaskListProps {
   selectedFolder: string | null;
-  onEditTask: (task: Task) => void;
-  tasks: Task[];
+  onEditTask: (task: Task, folderId: string) => void; 
+  onDeleteTask: (Task: Task) => void;
+  tasks?: Task[]; // Make this optional since we'll get tasks from folders
   folders: Folder[];
 }
 
 export function TaskList({
   selectedFolder,
   onEditTask,
-  tasks,
+  onDeleteTask,
+  tasks = [], // Default to empty array
   folders,
 }: TaskListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  console.log(tasks, "tasks ")
+  // ✅ Extract all tasks from folders and flatten them
+  const allTasksFromFolders = useMemo(() => {
+    const tasksWithFolderInfo: (Task & { folderId: string; folderName: string; folderColor: string })[] = [];
+    
+    folders.forEach((folder) => {
+      if (folder.tasks) {
+        folder.tasks.forEach((task) => {
+          tasksWithFolderInfo.push({
+            ...task,
+            folderId: folder.id,
+            folderName: folder.name,
+            folderColor: folder.color || "#9CA3AF",
+          });
+        });
+      }
+    });
+    
+    return tasksWithFolderInfo;
+  }, [folders]);
 
-  // ✅ Normalize tasks
-  const normalizedTasks = useMemo(
-    () =>
-      tasks.map((task) => {
+  // ✅ Combine tasks from props (if any) with tasks from folders
+  const allTasks = useMemo(() => {
+    // If tasks prop is provided and has items, use those (with folder lookup)
+    if (tasks.length > 0) {
+      return tasks.map((task) => {
         const folder = folders.find((f) => f.id === task.folderId);
         return {
           ...task,
           dueDate: task.dueDate ? parseISO(task.dueDate as any) : undefined,
           folderName: folder?.name ?? "Unknown",
-          folderColor: folder?.color ?? "#9CA3AF", // fallback gray
+          folderColor: folder?.color ?? "#9CA3AF",
         };
-      }),
-    [tasks, folders]
-  );
+      });
+    }
+    
+    // Otherwise, use tasks extracted from folders
+    return allTasksFromFolders.map((task) => ({
+      ...task,
+      dueDate: task.dueDate ? parseISO(task.dueDate as any) : undefined,
+    }));
+  }, [tasks, folders, allTasksFromFolders]);
+
+  console.log(allTasks, "all tasks with folder info");
 
   // ✅ Filtering logic
   const filteredTasks = useMemo(
     () =>
-      normalizedTasks.filter((task) => {
+      allTasks.filter((task) => {
         if (selectedFolder && task.folderId !== selectedFolder) return false;
         if (
           searchQuery &&
@@ -76,17 +107,17 @@ export function TaskList({
               (isTomorrow(task.dueDate) || isThisWeek(task.dueDate))
             );
           case "completed":
-            return task.status === "completed";
+            return task.status === "completed"; 
           default:
             return true;
         }
       }),
-    [normalizedTasks, searchQuery, activeTab, selectedFolder]
+    [allTasks, searchQuery, activeTab, selectedFolder]
   );
 
-  // ✅ Priority badge colors
+  // ✅ Priority badge colors (updated to handle uppercase)
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
+    switch (priority?.toLowerCase()) {
       case "high":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
       case "medium":
@@ -123,7 +154,7 @@ export function TaskList({
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="completed">completed</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-6">
@@ -145,8 +176,7 @@ export function TaskList({
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 space-y-3 sm:space-y-0">
                         <Checkbox
-                          checked={task.status === "completed"}
-                          // ⚡ You can later wire this to backend update
+                          checked={task.status === "completed"} // Updated to match API
                           onCheckedChange={() =>
                             console.log("toggle status", task.id)
                           }
@@ -180,17 +210,15 @@ export function TaskList({
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem
-                                  onClick={() => onEditTask(task)}
+                                  onClick={() => onEditTask(task, task.folderId)}
                                 >
                                   Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    console.log("delete task", task.id)
-                                  }
-                                  className="text-red-600"
-                                >
-                                  Delete
+                                <DropdownMenuItem asChild>
+                                  <DeleteTaskDialog
+                                    taskTitle={task.title}
+                                    onConfirm={() => onDeleteTask(task)}
+                                  />
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -221,7 +249,7 @@ export function TaskList({
                               </div>
                             )}
 
-                            {task.tags.length > 0 && (
+                            {task.tags && task.tags.length > 0 && (
                               <div className="flex items-center space-x-1">
                                 <Tag className="w-3 h-3 text-gray-400" />
                                 {task.tags.slice(0, 2).map((tag) => (
