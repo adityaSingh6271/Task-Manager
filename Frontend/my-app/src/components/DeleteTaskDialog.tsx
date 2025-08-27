@@ -14,9 +14,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
-interface DeleteTaskDialogProps {
-  taskTitle: string;
-  onConfirm: () => void;
+interface DeleteTaskDialogProps {   
+  taskTitle: string;   
+  onConfirm: () => void;   
+  onCancel: () => void; 
+  
 }
 
 export function DeleteTaskDialog({ taskTitle, onConfirm }: DeleteTaskDialogProps) {

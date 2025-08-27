@@ -16,10 +16,18 @@ export default function DashboardPage() {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingTaskFolderId, setEditingTaskFolderId] = useState<string>("");
-  const { data, isLoading, error } = useProfile();
+  const { data, isLoading} = useProfile();
 
   const folders = data?.folders ?? [];
-  const tasks = folders.flatMap((folder) => folder.tasks ?? []);
+  const tasks = folders.flatMap((folder) =>
+  (folder.tasks ?? []).map((task) => ({
+    ...task,
+    folderId: folder.id,
+    folderName: folder.name,
+    folderColor: folder.color ?? "#9CA3AF",
+  }))
+);
+
   const { mutate: deleteTask } = useDeleteTask();
 
   console.log(data, "data");
@@ -51,6 +59,16 @@ export default function DashboardPage() {
     });
   };
 
+  const handleToggleTask = (
+    task: Task,
+    folderId: string,
+    completed: boolean
+  ) => {
+    const newStatus = completed ? "completed" : "pending";
+    console.log("toggle status", task.id, newStatus);
+    // TODO: API call here
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header user={data?.user} isLoading={isLoading} />
@@ -71,6 +89,7 @@ export default function DashboardPage() {
             onDeleteTask={handleDeleteTask}
             tasks={tasks}
             folders={folders}
+            onToggleTask={handleToggleTask}
           />
         </div>
       </div>

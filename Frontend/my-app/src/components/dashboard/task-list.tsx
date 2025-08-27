@@ -22,31 +22,39 @@ interface Folder {
   id: string;
   name: string;
   color?: string;
-  tasks?: Task[]; 
+  tasks?: Task[];
 }
 
 interface TaskListProps {
   selectedFolder: string | null;
-  onEditTask: (task: Task, folderId: string) => void; 
-  onDeleteTask: (Task: Task) => void;
-  tasks?: Task[]; // Make this optional since we'll get tasks from folders
+  onEditTask: (task: Task, folderId: string) => void;
+  onDeleteTask: (task: Task) => void;
+  tasks?: Task[];
   folders: Folder[];
+  onToggleTask: (task: Task, folderId: string, completed: boolean) => void;
 }
 
 export function TaskList({
   selectedFolder,
   onEditTask,
   onDeleteTask,
-  tasks = [], // Default to empty array
+  tasks = [],
   folders,
+  onToggleTask,
 }: TaskListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
-  // ✅ Extract all tasks from folders and flatten them
+  // Extract all tasks from folders and flatten them
   const allTasksFromFolders = useMemo(() => {
-    const tasksWithFolderInfo: (Task & { folderId: string; folderName: string; folderColor: string })[] = [];
-    
+    const tasksWithFolderInfo: (Task & {
+      folderId: string;
+      folderName: string;
+      folderColor: string;
+    })[] = [];
+
     folders.forEach((folder) => {
       if (folder.tasks) {
         folder.tasks.forEach((task) => {
@@ -59,11 +67,11 @@ export function TaskList({
         });
       }
     });
-    
+
     return tasksWithFolderInfo;
   }, [folders]);
 
-  // ✅ Combine tasks from props (if any) with tasks from folders
+  // Combine tasks from props (if any) with tasks from folders
   const allTasks = useMemo(() => {
     // If tasks prop is provided and has items, use those (with folder lookup)
     if (tasks.length > 0) {
@@ -77,7 +85,7 @@ export function TaskList({
         };
       });
     }
-    
+
     // Otherwise, use tasks extracted from folders
     return allTasksFromFolders.map((task) => ({
       ...task,
@@ -85,9 +93,7 @@ export function TaskList({
     }));
   }, [tasks, folders, allTasksFromFolders]);
 
-  console.log(allTasks, "all tasks with folder info");
-
-  // ✅ Filtering logic
+  // Filtering logic
   const filteredTasks = useMemo(
     () =>
       allTasks.filter((task) => {
@@ -107,7 +113,7 @@ export function TaskList({
               (isTomorrow(task.dueDate) || isThisWeek(task.dueDate))
             );
           case "completed":
-            return task.status === "completed"; 
+            return task.status === "completed";
           default:
             return true;
         }
@@ -115,7 +121,7 @@ export function TaskList({
     [allTasks, searchQuery, activeTab, selectedFolder]
   );
 
-  // ✅ Priority badge colors (updated to handle uppercase)
+  // Priority badge colors
   const getPriorityColor = (priority: string) => {
     switch (priority?.toLowerCase()) {
       case "high":
@@ -127,6 +133,24 @@ export function TaskList({
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
+  };
+
+  const handleDeleteClick = (task: Task) => {
+    setTaskToDelete(task);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (taskToDelete) {
+      onDeleteTask(taskToDelete);
+      setTaskToDelete(null);
+    }
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteCancel = () => {
+    setTaskToDelete(null);
+    setDeleteDialogOpen(false);
   };
 
   return (
@@ -154,7 +178,7 @@ export function TaskList({
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="completed">completed</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-6">
@@ -176,10 +200,11 @@ export function TaskList({
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 space-y-3 sm:space-y-0">
                         <Checkbox
-                          checked={task.status === "completed"} // Updated to match API
-                          onCheckedChange={() =>
-                            console.log("toggle status", task.id)
-                          }
+                          checked={task.status === "completed"}
+                          onCheckedChange={(checked) => {
+                            const completed = checked === true;
+                            onToggleTask(task, task.folderId, completed);
+                          }}
                           className="mt-1"
                         />
 
@@ -202,7 +227,7 @@ export function TaskList({
                               )}
                             </div>
 
-                            <DropdownMenu>
+                            <DropdownMenu modal={false}>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">
                                   <MoreHorizontal className="w-4 h-4" />
@@ -210,15 +235,20 @@ export function TaskList({
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem
-                                  onClick={() => onEditTask(task, task.folderId)}
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    onEditTask(task, task.folderId);
+                                  }}
                                 >
                                   Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <DeleteTaskDialog
-                                    taskTitle={task.title}
-                                    onConfirm={() => onDeleteTask(task)}
-                                  />
+                                <DropdownMenuItem
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    handleDeleteClick(task);
+                                  }}
+                                >
+                                  Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -279,6 +309,15 @@ export function TaskList({
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Delete Dialog - Multiple possible prop configurations */}
+      {deleteDialogOpen && taskToDelete && (
+        <DeleteTaskDialog
+          taskTitle={taskToDelete.title}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
+      )}
     </div>
   );
 }
