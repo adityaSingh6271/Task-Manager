@@ -1,35 +1,14 @@
-"use client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
-
-interface DeleteTaskDialogProps {   
-  taskTitle: string;   
-  onConfirm: () => void;   
-  onCancel: () => void; 
-  
+interface DeleteTaskDialogProps {
+  taskTitle: string;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
-export function DeleteTaskDialog({ taskTitle, onConfirm }: DeleteTaskDialogProps) {
+export function DeleteTaskDialog({ taskTitle, onConfirm, onCancel }: DeleteTaskDialogProps) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-red-600">
-          <Trash2 className="w-4 h-4" />
-          <span className="ml-2">Delete</span>
-        </Button>
-      </AlertDialogTrigger>
+    <AlertDialog open={true} onOpenChange={(open) => {}}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
@@ -41,11 +20,8 @@ export function DeleteTaskDialog({ taskTitle, onConfirm }: DeleteTaskDialogProps
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-          >
+          <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} className="bg-red-600 hover:bg-red-700 focus:ring-red-600">
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

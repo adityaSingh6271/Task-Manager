@@ -14,12 +14,12 @@ export const useDeleteTask = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      return id; 
+      return id;
     },
-    onSuccess: (deletedId) => {
+    onSuccess: () => {
       // Invalidate and refetch tasks
-      queryClient.invalidateQueries({ queryKey: ["tasks", token] });
-      queryClient.invalidateQueries({ queryKey: ["task", deletedId, token] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+
     },
   });
 };

@@ -60,6 +60,7 @@ export const updateTask = async (req: Request, res: Response) => {
       folderId,
       dueDate,
       tags,
+      status,
     }: {
       title?: string;
       description?: string;
@@ -67,6 +68,7 @@ export const updateTask = async (req: Request, res: Response) => {
       folderId?: string;
       dueDate?: string;
       tags?: string[];
+      status?: "PENDING" | "COMPLETED";
     } = req.body;
 
     const task = await prisma.task.update({
@@ -78,6 +80,7 @@ export const updateTask = async (req: Request, res: Response) => {
         folderId,
         dueDate: dueDate ? new Date(dueDate) : undefined,
         tags: tags ?? undefined, // leave unchanged if not provided
+        status
       },
     });
 

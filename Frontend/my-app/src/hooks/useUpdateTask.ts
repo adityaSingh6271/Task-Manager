@@ -30,8 +30,8 @@ export const useUpdateTask = () => {
     },
     onSuccess: (_, variables) => {
       // Refetch tasks after update
-      queryClient.invalidateQueries({ queryKey: ["tasks", token] });
-      queryClient.invalidateQueries({ queryKey: ["task", variables.id, token] });
+queryClient.invalidateQueries({ queryKey: ["profile"] });
+
     },
   });
 };

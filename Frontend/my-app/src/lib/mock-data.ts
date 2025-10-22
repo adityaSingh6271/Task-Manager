@@ -17,7 +17,7 @@ export const mockFolders: Folder[] = [
 export const mockTasks: Task[] = [
   {
     id: "1",
-    title: "Complete project proposal",
+    title: "COMPLETED project proposal",
     description: "Finish the Q4 project proposal for the new client",
     status: "in-progress",
     priority: "high",
@@ -55,7 +55,7 @@ export const mockTasks: Task[] = [
     id: "4",
     title: "Read new book",
     description: 'Finish reading "The Productivity Method"',
-    status: "completed",
+    status: "COMPLETED",
     priority: "low",
     dueDate: new Date("2024-01-30"),
     tags: ["personal", "learning"],

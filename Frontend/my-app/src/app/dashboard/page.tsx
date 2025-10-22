@@ -10,6 +10,7 @@ import { TaskForm } from "@/components/dashboard/task-form";
 import type { Task, Folder } from "@/types";
 import { useProfile } from "@/hooks/useProfile";
 import { useDeleteTask } from "@/hooks/useDeleteTask";
+import { useUpdateTask } from "@/hooks/useUpdateTask";
 
 export default function DashboardPage() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -59,15 +60,28 @@ export default function DashboardPage() {
     });
   };
 
-  const handleToggleTask = (
-    task: Task,
-    folderId: string,
-    completed: boolean
-  ) => {
-    const newStatus = completed ? "completed" : "pending";
-    console.log("toggle status", task.id, newStatus);
-    // TODO: API call here
-  };
+const { mutate: updateTask } = useUpdateTask();
+
+const handleToggleTask = (
+  task: Task,
+  folderId: string,
+  COMPLETED: boolean
+) => {
+  const newStatus = COMPLETED ? "COMPLETED" : "PENDING";
+
+  updateTask({
+    id: task.id,
+    data: { status: newStatus },
+  }, {
+    onSuccess: () => {
+      console.log(`Task ${task.id} marked as ${newStatus}`);
+    },
+    onError: () => {
+      console.error("Failed to update task status");
+    },
+  });
+};
+
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">

@@ -31,7 +31,7 @@ interface TaskListProps {
   onDeleteTask: (task: Task) => void;
   tasks?: Task[];
   folders: Folder[];
-  onToggleTask: (task: Task, folderId: string, completed: boolean) => void;
+  onToggleTask: (task: Task, folderId: string, COMPLETED: boolean) => void;
 }
 
 export function TaskList({
@@ -112,8 +112,8 @@ export function TaskList({
               task.dueDate &&
               (isTomorrow(task.dueDate) || isThisWeek(task.dueDate))
             );
-          case "completed":
-            return task.status === "completed";
+          case "COMPLETED":
+            return task.status === "COMPLETED";
           default:
             return true;
         }
@@ -178,7 +178,7 @@ export function TaskList({
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="COMPLETED">COMPLETED</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-6">
@@ -200,10 +200,10 @@ export function TaskList({
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 space-y-3 sm:space-y-0">
                         <Checkbox
-                          checked={task.status === "completed"}
+                          checked={task.status === "COMPLETED"}
                           onCheckedChange={(checked) => {
-                            const completed = checked === true;
-                            onToggleTask(task, task.folderId, completed);
+                            const COMPLETED = checked === true;
+                            onToggleTask(task, task.folderId, COMPLETED);
                           }}
                           className="mt-1"
                         />
@@ -213,7 +213,7 @@ export function TaskList({
                             <div>
                               <h3
                                 className={`font-medium ${
-                                  task.status === "completed"
+                                  task.status === "COMPLETED"
                                     ? "line-through text-gray-500"
                                     : "text-gray-900 dark:text-white"
                                 }`}

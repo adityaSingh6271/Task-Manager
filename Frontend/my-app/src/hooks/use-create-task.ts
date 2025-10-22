@@ -10,7 +10,7 @@ export const useCreateTask = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data:CreateTaskData) => {
+    mutationFn: async (data: CreateTaskData) => {
       const res = await api.post<Task>(
         "/tasks/create",
         data,
@@ -24,8 +24,8 @@ export const useCreateTask = () => {
     },
     onSuccess: () => {
       // invalidate to refetch tasks & folders
-      queryClient.invalidateQueries({ queryKey: ["tasks", token] });
-      queryClient.invalidateQueries({ queryKey: ["folders", token] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+
     },
   });
 };

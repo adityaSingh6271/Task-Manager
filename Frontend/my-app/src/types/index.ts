@@ -17,7 +17,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  TaskStatus: "pending" | "in-progress" | "completed";
+  TaskStatus: "PENDING" | "IN_PROGRESS" | "COMPLETED";
   priority: "LOW" | "MEDIUM" | "HIGH";
   dueDate?: Date;
   tags: string[];
@@ -43,7 +43,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  status: "pending" | "in-progress" | "completed";
+  status:"PENDING" | "IN_PROGRESS" | "COMPLETED";
   priority: "LOW" | "MEDIUM" | "HIGH";
   dueDate?: Date;
   tags: string[];
