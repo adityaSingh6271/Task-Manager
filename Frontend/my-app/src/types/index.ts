@@ -43,7 +43,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  status:"PENDING" | "IN_PROGRESS" | "COMPLETED";
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
   priority: "LOW" | "MEDIUM" | "HIGH";
   dueDate?: Date;
   tags: string[];
@@ -74,7 +74,7 @@ export interface LoginData {
 }
 
 export interface OTPData {
-  mobile: string;
+  email: string;
   otp?: string;
 }
 

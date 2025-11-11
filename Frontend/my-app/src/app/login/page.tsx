@@ -19,7 +19,7 @@ import Link from "next/link";
 import { Eye, EyeOff, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
-import setToken, { setAuth } from "@/store/authSlice";
+import { setAuth } from "@/store/authSlice";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -37,6 +37,7 @@ export default function LoginPage() {
   const {
     register: registerOTP,
     handleSubmit: handleOTPSubmit,
+    watch: watchOTP,
     formState: { errors: otpErrors, isSubmitting: isOTPSubmitting },
   } = useForm<OTPData>();
 
@@ -74,42 +75,69 @@ export default function LoginPage() {
   const onOTPSubmit = async (data: OTPData) => {
     try {
       if (!otpSent) {
-        // Send OTP
         await fetch("http://localhost:5000/api/auth/send-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mobile: data.mobile }),
+          body: JSON.stringify({ email: data.email }),
         });
 
         setOtpSent(true);
         toast({
           title: "OTP sent!",
-          description: "Please check your mobile for the verification code.",
+          description: "Please check your email for the verification code.",
         });
       } else {
-        // Verify OTP
         const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mobile: data.mobile, otp: data.otp }),
+          body: JSON.stringify({ email: data.email, otp: data.otp }),
         });
 
-        if (!res.ok) throw new Error("Invalid OTP");
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || "Invalid OTP");
 
+        dispatch(setAuth({ token: result.token, user: result.user }));
         toast({
           title: "Welcome back!",
-          description: "You have successfully signed in.",
+          description: "OTP verified successfully.",
         });
         router.push("/dashboard");
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Authentication failed",
-        description: "Please try again.",
+        description: error.message || "Please try again.",
         variant: "destructive",
       });
     }
   };
+
+  const resendOtp = async (email?: string) => {
+    if (!email) {
+      toast({
+        title: "Invalid email",
+        description: "Please provide a valid email before resending OTP.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await fetch("http://localhost:5000/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      toast({ title: "OTP resent!", description: "Check your inbox again." });
+    } catch {
+      toast({
+        title: "Failed to resend OTP",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
+  const watch = (fieldName: keyof OTPData) => watchOTP(fieldName);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
@@ -205,23 +233,23 @@ export default function LoginPage() {
                 className="space-y-4"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="mobile">Mobile Number</Label>
+                  <Label htmlFor="email">Email Address</Label>
                   <Input
-                    id="mobile"
-                    type="tel"
-                    placeholder="Enter your mobile number"
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email address"
                     disabled={otpSent}
-                    {...registerOTP("mobile", {
-                      required: "Mobile number is required",
+                    {...registerOTP("email", {
+                      required: "Email address is required",
                       pattern: {
-                        value: /^[0-9]{10}$/,
-                        message: "Please enter a valid 10-digit mobile number",
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: "Please enter a valid email address",
                       },
                     })}
                   />
-                  {otpErrors.mobile && (
+                  {otpErrors.email && (
                     <p className="text-sm text-red-600">
-                      {otpErrors.mobile.message}
+                      {otpErrors.email.message}
                     </p>
                   )}
                 </div>
@@ -265,14 +293,24 @@ export default function LoginPage() {
                 </Button>
 
                 {otpSent && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full bg-transparent"
-                    onClick={() => setOtpSent(false)}
-                  >
-                    Change Mobile Number
-                  </Button>
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-transparent"
+                      onClick={() => resendOtp(watch("email"))}
+                    >
+                      Resend OTP
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-transparent"
+                      onClick={() => setOtpSent(false)}
+                    >
+                      Change Email
+                    </Button>
+                  </>
                 )}
               </form>
             </TabsContent>

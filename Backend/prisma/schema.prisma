@@ -48,11 +48,12 @@ model Task {
 }
 
 model OTP {
-  id        String   @id @default(uuid())
-  mobile    String
-  otp       String?
+  email     String   @id
+  otp       String
+  expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
 
 enum TaskStatus {
   PENDING

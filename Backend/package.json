@@ -21,7 +21,9 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "twilio": "^5.8.0"
+    "resend": "^6.4.2",
+    "twilio": "^5.8.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
