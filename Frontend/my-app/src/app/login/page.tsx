@@ -75,34 +75,45 @@ export default function LoginPage() {
   const onOTPSubmit = async (data: OTPData) => {
     try {
       if (!otpSent) {
-        await fetch("http://localhost:5000/api/auth/send-otp", {
+        // ---- REQUEST OTP ----
+        const res = await fetch("http://localhost:5000/api/auth/send-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: data.email }),
         });
 
+        const result = await res.json();
+
+        if (!res.ok) throw new Error(result.error || "Failed to send OTP");
+
         setOtpSent(true);
+
         toast({
           title: "OTP sent!",
           description: "Please check your email for the verification code.",
         });
-      } else {
-        const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: data.email, otp: data.otp }),
-        });
 
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.error || "Invalid OTP");
-
-        dispatch(setAuth({ token: result.token, user: result.user }));
-        toast({
-          title: "Welcome back!",
-          description: "OTP verified successfully.",
-        });
-        router.push("/dashboard");
+        return;
       }
+
+      // ---- VERIFY OTP ----
+      const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.email, otp: data.otp }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Invalid OTP");
+
+      dispatch(setAuth({ token: result.token, user: result.user }));
+
+      toast({
+        title: "Welcome back!",
+        description: "OTP verified successfully.",
+      });
+
+      router.push("/dashboard");
     } catch (error: any) {
       toast({
         title: "Authentication failed",
@@ -123,20 +134,26 @@ export default function LoginPage() {
     }
 
     try {
-      await fetch("http://localhost:5000/api/auth/resend-otp", {
+      const res = await fetch("http://localhost:5000/api/auth/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
+
+      const result = await res.json();
+
+      if (!res.ok) throw new Error(result.error || "Failed to resend OTP");
+
       toast({ title: "OTP resent!", description: "Check your inbox again." });
-    } catch {
+    } catch (error: any) {
       toast({
         title: "Failed to resend OTP",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     }
   };
+
   const watch = (fieldName: keyof OTPData) => watchOTP(fieldName);
 
   return (

@@ -99,7 +99,7 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="mobile">Mobile No.</Label>
               <Input
                 id="mobile"
@@ -116,7 +116,7 @@ export default function RegisterPage() {
               {errors.mobile && (
                 <p className="text-sm text-red-600">{errors.mobile.message}</p>
               )}
-            </div>
+            </div> */}
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>

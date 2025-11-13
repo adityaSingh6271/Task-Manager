@@ -63,7 +63,7 @@ export interface CreateTaskData {
 
 export interface RegisterData {
   email: string;
-  mobile: string;
+  // mobile?: string;
   password: string;
   confirmPassword: string;
 }
