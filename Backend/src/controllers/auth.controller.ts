@@ -11,11 +11,11 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // ------------------- Validation Schemas -------------------
 const registerSchema = z.object({
   email: z.string().email("Invalid email format"),
-  mobile: z
-    .string()
-    .min(8, "Mobile number must be at least 8 digits")
-    .max(15, "Mobile number too long")
-    .regex(/^\+?[0-9]+$/, "Mobile must contain only digits and optional +"),
+  // mobile: z
+  //   .string()
+  //   .min(8, "Mobile number must be at least 8 digits")
+  //   .max(15, "Mobile number too long")
+  //   .regex(/^\+?[0-9]+$/, "Mobile must contain only digits and optional +"),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters long")
@@ -41,20 +41,16 @@ export const register = async (req: Request, res: Response) => {
         .status(400)
         .json({ error: parsed.error.issues.map((e) => e.message) });
 
-    const { email, mobile, password, name } = parsed.data;
+    const { email, password, name } = parsed.data;
 
     const existByEmail = await prisma.user.findUnique({ where: { email } });
     if (existByEmail)
       return res.status(400).json({ error: "Email already registered" });
 
-    const existByMobile = await prisma.user.findUnique({ where: { mobile } });
-    if (existByMobile)
-      return res.status(400).json({ error: "Mobile already registered" });
-
     const hashed = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: { email, mobile, password: hashed, name: name ?? "" },
+      data: { email, password: hashed, name: name ?? "" },
       select: {
         id: true,
         email: true,
@@ -113,27 +109,37 @@ const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 min
 // ------------------- Send OTP -------------------
 export const sendOtp = async (req: Request, res: Response) => {
   try {
+    // 1. Validate input
     const parsed = emailSchema.safeParse(req.body);
-    if (!parsed.success)
+    if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
 
     const { email } = parsed.data;
+
+    // 2. Generate & save OTP
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
-    await prisma.oTP.upsert({
-      where: { email: email },
+    await prisma.otp.upsert({
+      where: { email },
       update: { otp, expiresAt },
       create: { email, otp, expiresAt },
     });
 
-    // Send email via Resend
-    await resend.emails.send({
-      from: "Jarvis <onboarding@resend.dev>",
+    // 3. Send OTP email
+    const { data, error } = await resend.emails.send({
+      from: "Jarvis <onboarding@resend.dev>", // replace after domain verify
       to: [email],
       subject: "Your Jarvis Login OTP",
-      html: `<p>Your one-time password is <strong>${otp}</strong>.</p><p>This code will expire in 10 minutes.</p>`,
+      html: `<p>Your one-time password is <strong>${otp}</strong>.</p>
+             <p>This code will expire in 10 minutes.</p>`,
     });
+
+    if (error) {
+      console.error("RESEND ERROR:", error);
+      return res.status(500).json({ error: "Failed to send OTP email" });
+    }
 
     return res.json({ message: "OTP sent successfully" });
   } catch (err) {
@@ -145,31 +151,43 @@ export const sendOtp = async (req: Request, res: Response) => {
 // ------------------- Verify OTP -------------------
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
+    // 1. Validate
     const schema = z.object({
       email: z.string().email(),
       otp: z.string().length(6),
     });
+
     const parsed = schema.safeParse(req.body);
-    if (!parsed.success)
+    if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
 
     const { email, otp } = parsed.data;
 
-    const record = await prisma.oTP.findUnique({ where: { email } });
-    if (!record || record.otp !== otp)
+    // 2. Fetch OTP from DB
+    const record = await prisma.otp.findUnique({ where: { email } });
+
+    if (!record || record.otp !== otp) {
       return res.status(400).json({ error: "Invalid OTP" });
+    }
 
-    if (record.expiresAt < new Date())
+    // 3. Check expiration
+    if (record.expiresAt < new Date()) {
       return res.status(400).json({ error: "OTP expired" });
+    }
 
+    // 4. Find user
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    await prisma.oTP.delete({ where: { email } });
+    // 5. Remove OTP (one-time use)
+    await prisma.otp.delete({ where: { email } });
 
-    // Generate JWT on successful OTP login
-    if (!JWT_SECRET)
-      return res.status(500).json({ error: "Missing JWT secret" });
+    // 6. Generate JWT
+    if (!JWT_SECRET) {
+      return res.status(500).json({ error: "JWT secret missing" });
+    }
+
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: "24h",
     });
@@ -189,25 +207,31 @@ export const verifyOtp = async (req: Request, res: Response) => {
 export const resendOtp = async (req: Request, res: Response) => {
   try {
     const parsed = emailSchema.safeParse(req.body);
-    if (!parsed.success)
+    if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
 
     const { email } = parsed.data;
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
-    await prisma.oTP.upsert({
-      where: { email: email },
+    await prisma.otp.upsert({
+      where: { email },
       update: { otp, expiresAt },
       create: { email, otp, expiresAt },
     });
 
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: "Jarvis <onboarding@resend.dev>",
       to: [email],
       subject: "Your Jarvis OTP (Resent)",
-      html: `<p>Your new OTP is <strong>${otp}</strong>.</p><p>This code will expire in 10 minutes.</p>`,
+      html: `<p>Your new OTP is <strong>${otp}</strong>.</p>`,
     });
+
+    if (error) {
+      console.error("RESEND ERROR:", error);
+      return res.status(500).json({ error: "Failed to send email" });
+    }
 
     return res.json({ message: "OTP resent successfully" });
   } catch (err) {

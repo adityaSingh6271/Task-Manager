@@ -47,12 +47,13 @@ model Task {
   updatedAt   DateTime     @updatedAt
 }
 
-model OTP {
+model Otp {
   email     String   @id
   otp       String
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
 
 
 enum TaskStatus {
