@@ -16,10 +16,15 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/notes", noteRoutes);
 
+
 app.get("/", (req, res) => {
   res.send("Backend server is running!");
 });
 
 app.use("/api/auth", authRoutes);
 
-app.listen(5000, () => console.log("Server running on http://localhost:5000"));
+if (process.env.NODE_ENV !== "production") {
+  app.listen(5000, () => console.log("Server running on http://localhost:5000"));
+}
+
+export default app;
