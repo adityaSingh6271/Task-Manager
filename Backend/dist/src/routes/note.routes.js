@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const note_controller_1 = require("../controllers/note.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authenticateJWT);
+router.get("/", note_controller_1.listNotes);
+router.post("/", note_controller_1.createNote);
+router.put("/:id", note_controller_1.updateNote);
+router.delete("/:id", note_controller_1.deleteNote);
+exports.default = router;
