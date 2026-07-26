@@ -212,11 +212,10 @@ export function TaskList({
                           <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                             <div>
                               <h3
-                                className={`font-medium ${
-                                  task.status === "COMPLETED"
+                                className={`font-medium ${task.status === "COMPLETED"
                                     ? "line-through text-gray-500"
                                     : "text-gray-900 dark:text-white"
-                                }`}
+                                  }`}
                               >
                                 {task.title}
                               </h3>

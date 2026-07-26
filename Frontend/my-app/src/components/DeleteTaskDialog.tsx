@@ -8,7 +8,7 @@ interface DeleteTaskDialogProps {
 
 export function DeleteTaskDialog({ taskTitle, onConfirm, onCancel }: DeleteTaskDialogProps) {
   return (
-    <AlertDialog open={true} onOpenChange={(open) => {}}>
+    <AlertDialog open={true} onOpenChange={(open) => { }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>

@@ -2,73 +2,630 @@
 
 import { useMemo, useState } from "react";
 import { format, isToday, parseISO } from "date-fns";
-import { CalendarDays, CheckCircle2, Inbox, Plus, Sparkles, Target } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Inbox,
+  Plus,
+  Sparkles,
+  Star,
+  Target,
+  X,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCreateTask } from "@/hooks/use-create-task";
 import { useUpdateTask } from "@/hooks/useUpdateTask";
+import { useEvents } from "@/hooks/use-events";
 import type { Folder, Task } from "@/types";
 
 type TaskWithProject = Task & { folderName: string; folderColor: string };
 
-export function TodayWorkspace({ folders, onOpenTask, onManageProjects }: { folders: Folder[]; onOpenTask: (task?: Task) => void; onManageProjects: () => void }) {
-  const [title, setTitle] = useState("");
-  const [folderId, setFolderId] = useState("");
-  const createTask = useCreateTask();
-  const updateTask = useUpdateTask();
-  const tasks = useMemo<TaskWithProject[]>(() => folders.flatMap((folder) => (folder.tasks ?? []).map((task) => ({ ...task, folderId: folder.id, folderName: folder.name, folderColor: folder.color }))), [folders]);
-  const active = tasks.filter((task) => task.status !== "COMPLETED");
-  const priorities = tasks.filter((task) => task.isPriority).sort((a, b) => (a.priorityOrder ?? 99) - (b.priorityOrder ?? 99));
-  const inbox = active.filter((task) => !task.dueDate && !task.isPriority);
-  const scheduledToday = tasks.filter((task) => task.dueDate && isToday(typeof task.dueDate === "string" ? parseISO(task.dueDate) : task.dueDate));
-  const completed = priorities.filter((task) => task.status === "COMPLETED").length;
-  const completedTasks = tasks.filter((task) => task.status === "COMPLETED");
+/* ─── Sub-components ─────────────────────────────────────── */
 
-  const addTask = async () => {
-    const selectedProject = folderId || folders[0]?.id;
-    if (!title.trim() || !selectedProject) return;
-    await createTask.mutateAsync({ title: title.trim(), folderId: selectedProject, tags: [] });
-    setTitle("");
-  };
-  const toggleComplete = (task: Task) => updateTask.mutate({ id: task.id, data: { status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED" } });
-  const makePriority = (task: Task) => updateTask.mutate({ id: task.id, data: { isPriority: !task.isPriority, priorityOrder: !task.isPriority ? priorities.length + 1 : null } });
-  const scheduleToday = (task: Task) => updateTask.mutate({ id: task.id, data: { dueDate: new Date() } });
-
-  return <main className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
-    <section className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div><p className="text-sm font-medium text-blue-600">{format(new Date(), "EEEE, MMMM d")}</p><h2 className="text-3xl font-semibold tracking-tight">Plan a day that fits.</h2><p className="mt-1 text-muted-foreground">Choose what matters, then give it a realistic place in your day.</p></div>
-      <div className="flex gap-2">{folders.length > 0 && <Button variant="outline" onClick={onManageProjects}>Manage projects</Button>}<Button onClick={() => folders.length ? onOpenTask() : onManageProjects()}><Plus className="mr-2 h-4 w-4" />{folders.length ? "Create task" : "Create your first project"}</Button></div>
-    </section>
-
-    {folders.length > 0 && <Card className="mb-6"><CardContent className="p-4"><p className="font-medium">Start here</p><div className="mt-3 grid gap-3 text-sm text-muted-foreground md:grid-cols-3"><p><span className="mr-2 rounded-full bg-blue-100 px-2 py-1 font-semibold text-blue-700">1</span>Capture new work in the box below.</p><p><span className="mr-2 rounded-full bg-blue-100 px-2 py-1 font-semibold text-blue-700">2</span>Choose up to three Inbox tasks as priorities.</p><p><span className="mr-2 rounded-full bg-blue-100 px-2 py-1 font-semibold text-blue-700">3</span>Schedule work for today, then check it off.</p></div></CardContent></Card>}
-    {!folders.length ? <Card className="mb-6 border-blue-500/30 bg-blue-500/10"><CardContent className="p-6"><h3 className="font-semibold">Start with one project</h3><p className="mt-1 text-sm text-muted-foreground">Use the “Create your first project” button above. Then you can capture tasks, add notes, and schedule events inside that project.</p></CardContent></Card> : <Card className="mb-6 border-blue-500/30 bg-blue-500/10"><CardContent className="flex flex-col gap-3 p-4 sm:flex-row">
-      <Input value={title} onChange={(event) => setTitle(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addTask()} placeholder="Quick capture: what needs your attention?" className="bg-background" />
-      <Select value={folderId} onValueChange={setFolderId}><SelectTrigger className="w-full bg-background sm:w-48"><SelectValue placeholder="Project" /></SelectTrigger><SelectContent>{folders.map((folder) => <SelectItem value={folder.id} key={folder.id}>{folder.name}</SelectItem>)}</SelectContent></Select>
-      <Button onClick={addTask} disabled={!title.trim() || !folders.length || createTask.isPending}><Plus className="mr-1 h-4 w-4" />Add</Button>
-    </CardContent></Card>}
-
-    <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
-      <div className="space-y-6">
-        <Card><CardHeader className="flex-row items-center justify-between space-y-0"><div><CardTitle className="flex items-center gap-2"><Target className="h-5 w-5 text-blue-600" />Today’s priorities</CardTitle><p className="mt-1 text-sm text-muted-foreground">Keep this to three meaningful outcomes.</p></div><div className="rounded-full bg-blue-100 px-3 py-2 text-sm font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">{completed}/{Math.max(priorities.length, 3)} done</div></CardHeader><CardContent className="space-y-2">
-          {priorities.length ? priorities.map((task) => <TaskRow key={task.id} task={task} onToggle={() => toggleComplete(task)} actionLabel="Remove" onAction={() => makePriority(task)} onEdit={() => onOpenTask(task)} />) : <Empty text="Choose up to three tasks from Inbox to make today intentional." />}
-        </CardContent></Card>
-        <Card><CardHeader><CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-violet-600" />Scheduled today <Badge variant="secondary">{scheduledToday.length}</Badge></CardTitle></CardHeader><CardContent className="space-y-2">{scheduledToday.length ? scheduledToday.map((task) => <TaskRow key={task.id} task={task} onToggle={() => toggleComplete(task)} actionLabel="Edit" onAction={() => onOpenTask(task)} onEdit={() => onOpenTask(task)} />) : <Empty text="No scheduled tasks yet. Schedule an Inbox task when you are ready." />}</CardContent></Card>
-        <Card><CardHeader><CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-600" />Completed <Badge variant="secondary">{completedTasks.length}</Badge></CardTitle></CardHeader><CardContent className="space-y-2">{completedTasks.length ? completedTasks.map((task) => <TaskRow key={task.id} task={task} onToggle={() => toggleComplete(task)} actionLabel="Reopen" onAction={() => toggleComplete(task)} onEdit={() => onOpenTask(task)} />) : <Empty text="Completed work stays here so progress never disappears." />}</CardContent></Card>
+function SectionHeader({
+  icon: Icon,
+  title,
+  count,
+  accentColor,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  count?: number;
+  accentColor: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <div
+          className={`flex h-7 w-7 items-center justify-center rounded-lg ${accentColor}`}
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {count !== undefined && (
+          <span className="rounded-full bg-foreground/8 px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            {count}
+          </span>
+        )}
       </div>
-      <div className="space-y-6">
-        <Card><CardHeader className="flex-row items-center justify-between space-y-0"><div><CardTitle className="flex items-center gap-2"><Inbox className="h-5 w-5 text-orange-600" />Inbox <Badge variant="secondary">{inbox.length}</Badge></CardTitle><p className="mt-1 text-sm text-muted-foreground">Unplanned work. Decide, schedule, or let it wait.</p></div></CardHeader><CardContent className="space-y-2">{inbox.length ? inbox.map((task) => <TaskRow key={task.id} task={task} onToggle={() => toggleComplete(task)} actionLabel="Today" onAction={() => scheduleToday(task)} onEdit={() => onOpenTask(task)} secondaryLabel={priorities.length < 3 ? "Prioritize" : undefined} onSecondary={() => makePriority(task)} />) : <Empty text="Inbox zero. Capture new work above as it comes in." />}</CardContent></Card>
-        <Card className="border-violet-200 bg-violet-50/50 dark:border-violet-950 dark:bg-violet-950/20"><CardContent className="p-5"><div className="flex gap-3"><Sparkles className="mt-0.5 h-5 w-5 text-violet-600" /><div><h3 className="font-semibold">Daily planning tip</h3><p className="mt-1 text-sm text-muted-foreground">Estimate less than your whole day. Leave room for messages, meetings, and the unexpected.</p></div></div></CardContent></Card>
+      {children}
+    </div>
+  );
+}
+
+function TaskRow({
+  task,
+  onToggle,
+  actionLabel,
+  onAction,
+  onEdit,
+  secondaryLabel,
+  onSecondary,
+}: {
+  task: TaskWithProject;
+  onToggle: () => void;
+  actionLabel: string;
+  onAction: () => void;
+  onEdit: () => void;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
+}) {
+  const done = task.status === "COMPLETED";
+  return (
+    <div
+      className={`group flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-150 ${done
+          ? "border-foreground/5 bg-foreground/2 opacity-60"
+          : "border-foreground/8 bg-foreground/3 hover:border-foreground/12 hover:bg-foreground/5"
+        }`}
+    >
+      <Checkbox
+        checked={done}
+        onCheckedChange={onToggle}
+        className="shrink-0 border-foreground/20"
+      />
+      <button onClick={onEdit} className="min-w-0 flex-1 text-left">
+        <p
+          className={`truncate text-sm ${done
+              ? "line-through text-muted-foreground"
+              : "font-medium text-foreground"
+            }`}
+        >
+          {task.title}
+        </p>
+        <div className="mt-0.5 flex items-center gap-2">
+          <span
+            className="h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: task.folderColor }}
+          />
+          <span className="truncate text-xs text-muted-foreground">
+            {task.folderName}
+          </span>
+          {task.dueDate && (
+            <>
+              <span className="text-xs text-foreground/20">·</span>
+              <span className="flex items-center gap-1 text-xs text-violet-400">
+                <Clock className="h-2.5 w-2.5" />
+                {format(
+                  typeof task.dueDate === "string"
+                    ? parseISO(task.dueDate)
+                    : task.dueDate,
+                  "MMM d"
+                )}
+              </span>
+            </>
+          )}
+        </div>
+      </button>
+      <div className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+        {secondaryLabel && (
+          <button
+            onClick={onSecondary}
+            className="rounded-lg border border-foreground/10 bg-foreground/5 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-indigo-500/30 hover:bg-indigo-500/10 hover:text-indigo-400 transition-all"
+          >
+            {secondaryLabel}
+          </button>
+        )}
+        <button
+          onClick={onAction}
+          className="rounded-lg border border-foreground/10 bg-foreground/5 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-foreground/20 hover:text-foreground transition-all"
+        >
+          {actionLabel}
+        </button>
       </div>
     </div>
-  </main>;
+  );
 }
 
-function TaskRow({ task, onToggle, actionLabel, onAction, onEdit, secondaryLabel, onSecondary }: { task: TaskWithProject; onToggle: () => void; actionLabel: string; onAction: () => void; onEdit: () => void; secondaryLabel?: string; onSecondary?: () => void }) {
-  return <div className="group flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-muted/40"><Checkbox checked={task.status === "COMPLETED"} onCheckedChange={onToggle} /><button onClick={onEdit} className="min-w-0 flex-1 text-left"><p className={task.status === "COMPLETED" ? "truncate text-sm line-through text-muted-foreground" : "truncate text-sm font-medium"}>{task.title}</p><p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: task.folderColor }} />{task.folderName}</p></button>{secondaryLabel && <Button size="sm" variant="ghost" onClick={onSecondary}>{secondaryLabel}</Button>}<Button size="sm" variant="outline" onClick={onAction}>{actionLabel}</Button></div>;
+function EmptyState({ text, cta, onCta }: { text: string; cta?: string; onCta?: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-foreground/10 py-8 text-center">
+      <CheckCircle2 className="mb-2 h-7 w-7 text-foreground/15" />
+      <p className="text-sm text-muted-foreground">{text}</p>
+      {cta && onCta && (
+        <button
+          onClick={onCta}
+          className="mt-3 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+        >
+          {cta}
+        </button>
+      )}
+    </div>
+  );
 }
 
-function Empty({ text }: { text: string }) { return <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground"><CheckCircle2 className="mx-auto mb-2 h-5 w-5 opacity-50" />{text}</div>; }
+/* ─── Main component ─────────────────────────────────────── */
+
+export function TodayWorkspace({
+  folders,
+  onOpenTask,
+  onManageProjects,
+}: {
+  folders: Folder[];
+  onOpenTask: (task?: Task) => void;
+  onManageProjects: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [folderId, setFolderId] = useState("");
+  const [showCompleted, setShowCompleted] = useState(false);
+  const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
+  const { data: events = [] } = useEvents();
+
+  /* ── Derived task lists ── */
+  const tasks = useMemo<TaskWithProject[]>(
+    () =>
+      folders.flatMap((folder) =>
+        (folder.tasks ?? []).map((task) => ({
+          ...task,
+          folderId: folder.id,
+          folderName: folder.name,
+          folderColor: folder.color,
+        }))
+      ),
+    [folders]
+  );
+
+  const priorities = tasks
+    .filter((t) => t.isPriority && t.status !== "COMPLETED")
+    .sort((a, b) => (a.priorityOrder ?? 99) - (b.priorityOrder ?? 99));
+
+  const scheduledToday = tasks.filter(
+    (t) =>
+      t.dueDate &&
+      isToday(typeof t.dueDate === "string" ? parseISO(t.dueDate) : t.dueDate)
+  );
+
+  const inbox = tasks.filter(
+    (t) => t.status !== "COMPLETED" && !t.dueDate && !t.isPriority
+  );
+
+  const completedTasks = tasks.filter((t) => t.status === "COMPLETED");
+
+  /* Progress bar stats */
+  const totalActive = priorities.length + scheduledToday.filter(t => t.status !== "COMPLETED").length;
+  const doneToday = [
+    ...priorities.filter((t) => t.status === "COMPLETED"),
+    ...scheduledToday.filter((t) => t.status === "COMPLETED"),
+  ].length;
+  const progress = totalActive > 0 ? Math.round((doneToday / (totalActive + doneToday)) * 100) : 0;
+
+  /* Today's events */
+  const todayEvents = events.filter((e) => isToday(new Date(e.startAt)));
+
+  /* ── Handlers ── */
+  const addTask = async () => {
+    const selected = folderId || folders[0]?.id;
+    if (!title.trim() || !selected) return;
+    await createTask.mutateAsync({ title: title.trim(), folderId: selected, tags: [] });
+    setTitle("");
+  };
+
+  const toggleComplete = (task: Task) =>
+    updateTask.mutate({
+      id: task.id,
+      data: { status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED" },
+    });
+
+  const makePriority = (task: Task) =>
+    updateTask.mutate({
+      id: task.id,
+      data: {
+        isPriority: !task.isPriority,
+        priorityOrder: !task.isPriority ? priorities.length + 1 : null,
+      },
+    });
+
+  const scheduleToday = (task: Task) =>
+    updateTask.mutate({ id: task.id, data: { dueDate: new Date() } });
+
+  /* ── Empty / no-projects state ── */
+  if (!folders.length) {
+    return (
+      <main className="mx-auto w-full max-w-2xl p-8 sm:p-10">
+        <div className="mb-2 text-sm font-semibold text-indigo-400">
+          {format(new Date(), "EEEE, MMMM d")}
+        </div>
+        <h2 className="mb-1 text-3xl font-bold tracking-tight">
+          Let&apos;s get started
+        </h2>
+        <p className="mb-10 text-muted-foreground">
+          Create your first project to start capturing tasks, notes, and events.
+        </p>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-indigo-500/30 bg-indigo-500/5 py-16 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/15 border border-indigo-500/20">
+            <Plus className="h-7 w-7 text-indigo-400" />
+          </div>
+          <p className="mb-2 font-semibold">No projects yet</p>
+          <p className="mb-6 max-w-xs text-sm text-muted-foreground">
+            Projects hold your tasks, notes, and events. Create one to unlock your workspace.
+          </p>
+          <Button
+            onClick={onManageProjects}
+            className="btn-gradient rounded-xl gap-2 px-6"
+          >
+            <Plus className="h-4 w-4" />
+            Create first project
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
+      {/* ─── Top strip: date + actions ─ */}
+      <section className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-indigo-400">
+            {format(new Date(), "EEEE, MMMM d")}
+          </p>
+          <h2 className="mt-0.5 text-3xl font-bold tracking-tight">
+            Today&apos;s Workspace
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Focus on priorities first — then handle scheduled work.
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <Button
+            variant="outline"
+            className="border-foreground/10 bg-foreground/5 hover:bg-foreground/10"
+            onClick={onManageProjects}
+          >
+            Manage projects
+          </Button>
+          <Button
+            className="btn-gradient gap-2 rounded-xl"
+            onClick={() => onOpenTask()}
+          >
+            <Plus className="h-4 w-4" />
+            New task
+          </Button>
+        </div>
+      </section>
+
+      {/* ─── Progress + Events strip ─ */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        {/* Progress card */}
+        <div className="rounded-2xl border border-foreground/8 bg-foreground/3 p-5">
+          <div className="mb-3 flex items-center justify-between text-sm">
+            <span className="font-medium">Today&apos;s progress</span>
+            <span className="font-semibold text-indigo-400">
+              {doneToday}/{totalActive + doneToday} tasks
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-foreground/8">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {progress === 100
+              ? "🎉 Amazing! All done for today."
+              : progress > 50
+                ? "Great momentum — keep going!"
+                : progress > 0
+                  ? "Good start — stay focused."
+                  : "Set your top 3 priorities below to begin."}
+          </p>
+        </div>
+
+        {/* Events today */}
+        <div className="rounded-2xl border border-foreground/8 bg-foreground/3 p-5">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+            <CalendarDays className="h-4 w-4 text-violet-400" />
+            Events today
+            <Badge variant="secondary" className="rounded-full text-xs">
+              {todayEvents.length}
+            </Badge>
+          </div>
+          {todayEvents.length ? (
+            <div className="space-y-2">
+              {todayEvents.slice(0, 3).map((e) => (
+                <div
+                  key={e.id}
+                  className="flex items-center gap-2.5 rounded-lg border border-violet-500/20 bg-violet-500/8 px-3 py-2 text-xs"
+                >
+                  <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" />
+                  <span className="flex-1 truncate font-medium">{e.title}</span>
+                  <span className="shrink-0 text-violet-300/70">
+                    {format(new Date(e.startAt), "h:mm a")}
+                  </span>
+                </div>
+              ))}
+              {todayEvents.length > 3 && (
+                <p className="text-xs text-muted-foreground">
+                  +{todayEvents.length - 3} more events
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No events scheduled today.{" "}
+              <a href="/calendar" className="text-violet-400 hover:underline">
+                Open calendar →
+              </a>
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ─── Quick capture ─ */}
+      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-indigo-500/25 bg-indigo-500/5 p-4 sm:flex-row">
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addTask()}
+          placeholder="Quick capture — what needs your attention?"
+          className="border-foreground/10 bg-foreground/5 focus:border-indigo-500/50"
+        />
+        <Select value={folderId} onValueChange={setFolderId}>
+          <SelectTrigger className="w-full border-foreground/10 bg-foreground/5 sm:w-44">
+            <SelectValue placeholder="Project" />
+          </SelectTrigger>
+          <SelectContent>
+            {folders.map((f) => (
+              <SelectItem key={f.id} value={f.id}>
+                {f.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          onClick={addTask}
+          disabled={!title.trim() || createTask.isPending}
+          className="btn-gradient shrink-0 gap-1.5 rounded-xl"
+        >
+          <Plus className="h-4 w-4" />
+          Add
+        </Button>
+      </div>
+
+      {/* ─── Main two-column layout ─ */}
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_1fr]">
+
+        {/* LEFT column */}
+        <div className="space-y-5">
+
+          {/* Priorities */}
+          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
+            <SectionHeader
+              icon={Star}
+              title="Today's Priorities"
+              accentColor="bg-indigo-500/15 border border-indigo-500/20 text-indigo-400"
+            >
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-20 overflow-hidden rounded-full bg-foreground/8">
+                  <div
+                    className="h-full rounded-full bg-indigo-500 transition-all"
+                    style={{
+                      width: `${Math.min((priorities.filter(t => t.status === "COMPLETED").length / Math.max(priorities.length, 1)) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {priorities.filter(t => t.status === "COMPLETED").length}/{Math.max(priorities.length, 3)}
+                </span>
+              </div>
+            </SectionHeader>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Choose up to 3 meaningful outcomes for today.
+            </p>
+            <div className="space-y-2">
+              {priorities.length ? (
+                priorities.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onToggle={() => toggleComplete(task)}
+                    actionLabel="Remove"
+                    onAction={() => makePriority(task)}
+                    onEdit={() => onOpenTask(task)}
+                  />
+                ))
+              ) : (
+                <EmptyState
+                  text="No priorities set yet."
+                  cta="Pick from Inbox →"
+                  onCta={() => { }}
+                />
+              )}
+            </div>
+          </section>
+
+          {/* Scheduled today */}
+          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
+            <SectionHeader
+              icon={CalendarDays}
+              title="Scheduled Today"
+              count={scheduledToday.length}
+              accentColor="bg-violet-500/15 border border-violet-500/20 text-violet-400"
+            />
+            <p className="mb-3 text-xs text-muted-foreground">
+              Tasks with today as their due date.
+            </p>
+            <div className="space-y-2">
+              {scheduledToday.length ? (
+                scheduledToday.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onToggle={() => toggleComplete(task)}
+                    actionLabel="Edit"
+                    onAction={() => onOpenTask(task)}
+                    onEdit={() => onOpenTask(task)}
+                  />
+                ))
+              ) : (
+                <EmptyState text="No tasks scheduled for today." />
+              )}
+            </div>
+          </section>
+
+          {/* Completed (collapsible) */}
+          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
+            <button
+              onClick={() => setShowCompleted(!showCompleted)}
+              className="w-full"
+            >
+              <SectionHeader
+                icon={CheckCircle2}
+                title="Completed"
+                count={completedTasks.length}
+                accentColor="bg-emerald-500/15 border border-emerald-500/20 text-emerald-400"
+              >
+                {showCompleted ? (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                )}
+              </SectionHeader>
+            </button>
+            {showCompleted && (
+              <div className="mt-1 space-y-2">
+                {completedTasks.length ? (
+                  completedTasks.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onToggle={() => toggleComplete(task)}
+                      actionLabel="Reopen"
+                      onAction={() => toggleComplete(task)}
+                      onEdit={() => onOpenTask(task)}
+                    />
+                  ))
+                ) : (
+                  <EmptyState text="Completed tasks will appear here." />
+                )}
+              </div>
+            )}
+            {!showCompleted && completedTasks.length > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {completedTasks.length} task{completedTasks.length !== 1 ? "s" : ""} done — click to expand
+              </p>
+            )}
+          </section>
+        </div>
+
+        {/* RIGHT column */}
+        <div className="space-y-5">
+
+          {/* Inbox */}
+          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
+            <SectionHeader
+              icon={Inbox}
+              title="Inbox"
+              count={inbox.length}
+              accentColor="bg-amber-500/15 border border-amber-500/20 text-amber-400"
+            />
+            <p className="mb-3 text-xs text-muted-foreground">
+              Unplanned work — decide, schedule, or let it wait.
+            </p>
+            <div className="space-y-2">
+              {inbox.length ? (
+                inbox.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onToggle={() => toggleComplete(task)}
+                    actionLabel="Schedule"
+                    onAction={() => scheduleToday(task)}
+                    onEdit={() => onOpenTask(task)}
+                    secondaryLabel={priorities.length < 3 ? "Prioritize" : undefined}
+                    onSecondary={() => makePriority(task)}
+                  />
+                ))
+              ) : (
+                <EmptyState text="Inbox zero! Add new tasks above as they come in." />
+              )}
+            </div>
+          </section>
+
+          {/* Planning tip */}
+          <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/8 to-indigo-500/5 p-5">
+            <div className="flex gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 border border-violet-500/20">
+                <Sparkles className="h-4 w-4 text-violet-400" />
+              </div>
+              <div>
+                <h4 className="mb-1 text-sm font-semibold">Daily planning tip</h4>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Estimate less than your whole day. Leave room for messages, meetings, and the unexpected. A short focused list beats a long aspirational one.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* How to use guide */}
+          <div className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
+            <h4 className="mb-3 text-sm font-semibold">How Today works</h4>
+            <div className="space-y-3">
+              {[
+                {
+                  step: "1",
+                  color: "bg-indigo-500/20 text-indigo-400 border-indigo-500/25",
+                  text: "Capture new work in the quick-add bar above.",
+                },
+                {
+                  step: "2",
+                  color: "bg-amber-500/20 text-amber-400 border-amber-500/25",
+                  text: "Pick up to 3 Inbox tasks and mark them as priorities.",
+                },
+                {
+                  step: "3",
+                  color: "bg-violet-500/20 text-violet-400 border-violet-500/25",
+                  text: "Schedule work for today, then check it off when done.",
+                },
+              ].map(({ step, color, text }) => (
+                <div key={step} className="flex items-start gap-3 text-xs text-muted-foreground">
+                  <div
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${color}`}
+                  >
+                    {step}
+                  </div>
+                  <p className="mt-0.5 leading-relaxed">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}

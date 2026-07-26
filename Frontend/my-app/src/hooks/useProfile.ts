@@ -11,7 +11,7 @@ export const useProfile = () => {
   const token = useSelector((state: RootState) => state.auth.token);
 
   const query = useQuery<ProfileData>({
-    queryKey: ["profile", token], 
+    queryKey: ["profile", token],
     queryFn: async () => {
       const res = await api.get<ProfileData>("/profile/me", {
         headers: {
@@ -20,7 +20,7 @@ export const useProfile = () => {
       });
       return res.data;
     },
-    enabled: !!token, 
+    enabled: !!token,
   });
   useEffect(() => {
     if (query.isError) toast.error("Could not load your workspace", { description: getApiErrorMessage(query.error) });

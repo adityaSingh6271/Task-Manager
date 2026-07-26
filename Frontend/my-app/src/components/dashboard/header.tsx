@@ -65,7 +65,7 @@ export function Header({ user, isLoading }: HeaderProps) {
           </Button>
 
           <DropdownMenu>
-             <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 className="relative h-8 w-8 rounded-full cursor-pointer"

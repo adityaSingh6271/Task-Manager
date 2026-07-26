@@ -2,21 +2,73 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { RegisterData } from "@/types";
 import Link from "next/link";
-import { Eye, EyeOff, Zap } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Zap,
+  ArrowRight,
+  Mail,
+  Lock,
+  CheckCircle,
+  Target,
+  Calendar,
+  FileText,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+
+/* ─── Password strength ────────────────────────────────────── */
+
+function calcStrength(pw: string): { score: number; label: string; color: string } {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+  if (score <= 1) return { score, label: "Weak", color: "bg-rose-500" };
+  if (score <= 2) return { score, label: "Fair", color: "bg-amber-500" };
+  if (score <= 3) return { score, label: "Good", color: "bg-sky-500" };
+  return { score, label: "Strong", color: "bg-emerald-500" };
+}
+
+function PasswordStrength({ password }: { password: string }) {
+  if (!password) return null;
+  const { score, label, color } = calcStrength(password);
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= Math.ceil((score / 5) * 4) ? color : "bg-foreground/10"
+              }`}
+          />
+        ))}
+      </div>
+      <p className={`text-xs font-medium ${score <= 1 ? "text-rose-400" : score <= 2 ? "text-amber-400" : score <= 3 ? "text-sky-400" : "text-emerald-400"}`}>
+        Password strength: {label}
+      </p>
+    </div>
+  );
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-rose-400">
+      <span className="inline-block h-1 w-1 rounded-full bg-rose-400" />
+      {message}
+    </p>
+  );
+}
+
+/* ─── Main Page ────────────────────────────────────────────── */
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -31,28 +83,18 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterData>();
 
-  const password = watch("password");
+  const password = watch("password") ?? "";
 
   const onSubmit = async (data: RegisterData) => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-
       const result = await res.json();
-
-      if (!res.ok) {
-        // Show error from backend if available
-        throw new Error(result.error || "Something went wrong");
-      }
-
-      toast({
-        title: "Account created successfully!",
-        description: "Welcome to Jarvis. You can now sign in.",
-      });
-
+      if (!res.ok) throw new Error(result.error || "Something went wrong");
+      toast({ title: "Account created!", description: "Welcome to Jarvis. You can now sign in." });
       router.push("/login");
     } catch (error: any) {
       toast({
@@ -64,149 +106,177 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-2xl font-bold">Jarvis</span>
+    <div className="relative flex min-h-screen overflow-hidden bg-background">
+      {/* ── Orbs ── */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="orb orb-2 top-[-80px] right-[-40px] opacity-60" />
+        <div className="orb orb-3 bottom-[-60px] left-[-40px] opacity-50" />
+      </div>
+
+      {/* ─── Left brand panel ──────────────────────────────── */}
+      <div className="relative hidden w-[45%] flex-col items-center justify-center overflow-hidden border-r border-foreground/5 lg:flex">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-600/10 via-indigo-600/5 to-transparent" />
+        <div className="relative z-10 px-12 text-center">
+          <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-xl pulse-ring">
+            <Zap className="h-8 w-8 text-white" />
           </div>
-          <CardTitle>Create your account</CardTitle>
-          <CardDescription>
-            Join Jarvis and start organizing your tasks efficiently
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address",
-                  },
-                })}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-600">{errors.email.message}</p>
-              )}
-            </div>
+          <h1 className="mb-3 text-4xl font-bold tracking-tight">Join Jarvis</h1>
+          <p className="mb-12 text-base text-muted-foreground">
+            Start organizing your work with purpose and clarity.
+          </p>
 
-            {/* <div className="space-y-2">
-              <Label htmlFor="mobile">Mobile No.</Label>
-              <Input
-                id="mobile"
-                type="tel"
-                placeholder="Enter your mobile no"
-                {...register("mobile", {
-                  required: "Mobile number is required",
-                  pattern: {
-                    value: /^[0-9]{10}$/, // 10-digit number validation
-                    message: "Invalid mobile number",
-                  },
-                })}
-              />
-              {errors.mobile && (
-                <p className="text-sm text-red-600">{errors.mobile.message}</p>
-              )}
-            </div> */}
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Create a password"
-                  {...register("password", {
-                    required: "Password is required",
-                    minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
-                    },
-                  })}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
+          {/* What you get */}
+          <div className="space-y-4 text-left">
+            {[
+              { icon: Target, text: "Daily priority planning with 3-task focus system" },
+              { icon: Calendar, text: "Calendar events + task due dates in one view" },
+              { icon: FileText, text: "Project-linked notes for richer context" },
+              { icon: CheckCircle, text: "Progress tracking so nothing gets lost" },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-start gap-3 text-sm text-muted-foreground">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 border border-violet-500/20">
+                  <Icon className="h-4 w-4 text-violet-400" />
+                </div>
+                <span className="mt-1">{text}</span>
               </div>
-              {errors.password && (
-                <p className="text-sm text-red-600">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm your password"
-                  {...register("confirmPassword", {
-                    required: "Please confirm your password",
-                    validate: (value) =>
-                      value === password || "Passwords do not match",
-                  })}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-sm text-red-600">
-                  {errors.confirmPassword.message}
-                </p>
-              )}
-            </div>
+      {/* ─── Right form panel ──────────────────────────────── */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        {/* Mobile logo */}
+        <div className="mb-8 flex items-center gap-3 lg:hidden">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600">
+            <Zap className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-xl font-bold">Jarvis</span>
+        </div>
 
-            <Button
-              type="submit"
-              className="w-full cursor-pointer"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Creating account..." : "Create account"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 hover:underline">
-                Log in
-              </Link>
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold tracking-tight">Create your account</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Free to start. No credit card required.
             </p>
           </div>
-        </CardContent>
-      </Card>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-email" className="text-sm font-medium">
+                Email address
+              </Label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="reg-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className="border-foreground/10 bg-foreground/5 pl-10 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: "Invalid email address" },
+                  })}
+                />
+              </div>
+              <FieldError message={errors.email?.message} />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-password" className="text-sm font-medium">
+                Password
+              </Label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="reg-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a password (min. 8 characters)"
+                  className="border-foreground/10 bg-foreground/5 pl-10 pr-10 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: { value: 8, message: "Password must be at least 8 characters" },
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <PasswordStrength password={password} />
+              <FieldError message={errors.password?.message} />
+            </div>
+
+            {/* Confirm password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-confirm" className="text-sm font-medium">
+                Confirm password
+              </Label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="reg-confirm"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Repeat your password"
+                  className="border-foreground/10 bg-foreground/5 pl-10 pr-10 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                  {...register("confirmPassword", {
+                    required: "Please confirm your password",
+                    validate: (value) => value === password || "Passwords do not match",
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <FieldError message={errors.confirmPassword?.message} />
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="btn-gradient w-full mt-2 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-foreground/30 border-t-white" />
+                  Creating account…
+                </>
+              ) : (
+                <>
+                  Create free account
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+
+            {/* Terms note */}
+            <p className="text-center text-xs text-muted-foreground">
+              By signing up you agree to our{" "}
+              <span className="text-indigo-400 cursor-pointer hover:underline">Terms of Service</span>{" "}
+              and{" "}
+              <span className="text-indigo-400 cursor-pointer hover:underline">Privacy Policy</span>.
+            </p>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/login" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

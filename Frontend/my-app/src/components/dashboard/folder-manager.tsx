@@ -76,26 +76,26 @@ export function FolderManager({
     if (open && folders.length === 0) handleAddNew();
   }, [open, folders.length]);
 
-const onSubmit = async (data: FolderFormData) => {
-  try {
-    if (editingFolder) {
-      // Update: only send id, name, color
-      const updatePayload: UpdateFolderPayload = {
-        id: editingFolder.id,
-        ...data,
-      };
-      await updateFolder(updatePayload);
+  const onSubmit = async (data: FolderFormData) => {
+    try {
+      if (editingFolder) {
+        // Update: only send id, name, color
+        const updatePayload: UpdateFolderPayload = {
+          id: editingFolder.id,
+          ...data,
+        };
+        await updateFolder(updatePayload);
 
-    } else {
-      await createFolder(data);
+      } else {
+        await createFolder(data);
 
-    }
+      }
 
-    reset();
-    setShowForm(false);
-    setEditingFolder(null);
-  } catch { /* Mutation hooks show the error toast. */ }
-};
+      reset();
+      setShowForm(false);
+      setEditingFolder(null);
+    } catch { /* Mutation hooks show the error toast. */ }
+  };
 
 
   const handleEdit = (folder: Folder) => {
@@ -105,19 +105,19 @@ const onSubmit = async (data: FolderFormData) => {
     setShowForm(true);
   };
 
-const handleDelete = () => {
-  if (!projectToDelete) return;
-  deleteFolderMutation.mutate(
-    { id: projectToDelete.id },
-    {
-      onSuccess: () => {
-        const updatedFolders = folders.filter((folder) => folder.id !== projectToDelete.id);
-        onFoldersUpdate(updatedFolders);
-        setProjectToDelete(null);
-      },
-    }
-  );
-}
+  const handleDelete = () => {
+    if (!projectToDelete) return;
+    deleteFolderMutation.mutate(
+      { id: projectToDelete.id },
+      {
+        onSuccess: () => {
+          const updatedFolders = folders.filter((folder) => folder.id !== projectToDelete.id);
+          onFoldersUpdate(updatedFolders);
+          setProjectToDelete(null);
+        },
+      }
+    );
+  }
 
   const handleAddNew = () => {
     setEditingFolder(null);
@@ -214,11 +214,10 @@ const handleDelete = () => {
                         <button
                           key={color}
                           type="button"
-                          className={`w-8 h-8 rounded-full border-2 cursor-pointer ${
-                            watchedColor === color
+                          className={`w-8 h-8 rounded-full border-2 cursor-pointer ${watchedColor === color
                               ? "border-gray-900 dark:border-white"
                               : "border-gray-300"
-                          }`}
+                            }`}
                           style={{ backgroundColor: color }}
                           onClick={() => setValue("color", color)}
                         />
@@ -237,8 +236,8 @@ const handleDelete = () => {
                           ? "Updating..."
                           : "Creating..."
                         : editingFolder
-                        ? "Update project"
-                        : "Create project"}
+                          ? "Update project"
+                          : "Create project"}
                     </Button>
                     <Button
                       type="button"
