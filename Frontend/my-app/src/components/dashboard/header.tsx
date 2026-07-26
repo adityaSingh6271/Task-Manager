@@ -14,6 +14,8 @@ import { useTheme } from "next-themes"
 
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useDispatch } from "react-redux"
+import { clearAuth } from "@/store/authSlice"
 
 interface HeaderProps {
   user?: {
@@ -27,9 +29,15 @@ interface HeaderProps {
 export function Header({ user, isLoading }: HeaderProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
+  const dispatch = useDispatch()
   const { toast } = useToast()
+  const displayName = user?.name?.trim() || user?.email?.split("@")[0] || "User";
+  const initials = user?.name?.trim()
+    ? user.name.trim().split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()
+    : user?.email?.[0]?.toUpperCase() || "U";
 
   const handleLogout = () => {
+    dispatch(clearAuth())
     toast({
       title: "Logged out successfully",
       description: "See you soon!",
@@ -38,14 +46,14 @@ export function Header({ user, isLoading }: HeaderProps) {
   }
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+    <header className="border-b border-border bg-sidebar px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jarvis</h1>
+            <h1 className="text-2xl font-bold text-foreground">Jarvis</h1>
           </div>
         </div>
 
@@ -64,14 +72,11 @@ export function Header({ user, isLoading }: HeaderProps) {
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage
-                    src={user?.avatar || "/placeholder.svg"}
-                    alt={user?.name || "User"}
+                    src={user?.avatar || undefined}
+                    alt={displayName}
                   />
                   <AvatarFallback>
-                    {user?.name
-                      ?.split(" ")
-                      .map((n) => n[0])
-                      .join("") || "U"}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -79,16 +84,16 @@ export function Header({ user, isLoading }: HeaderProps) {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1 leading-none">
-                  <p className="font-medium">{user?.name}</p>
+                  <p className="font-medium">{displayName}</p>
                   <p className="w-[200px] truncate text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/profile")}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/profile")}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>

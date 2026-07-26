@@ -1,129 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Header } from "@/components/dashboard/header";
 import { Sidebar } from "@/components/dashboard/sidebar";
-import { TaskList } from "@/components/dashboard/task-list";
+import { FolderManager } from "@/components/dashboard/folder-manager";
 import { TaskForm } from "@/components/dashboard/task-form";
-import type { Task, Folder } from "@/types";
+import { TodayWorkspace } from "@/components/dashboard/today-workspace";
+import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/useProfile";
-import { useDeleteTask } from "@/hooks/useDeleteTask";
-import { useUpdateTask } from "@/hooks/useUpdateTask";
+import type { Task } from "@/types";
 
 export default function DashboardPage() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editingTaskFolderId, setEditingTaskFolderId] = useState<string>("");
-  const { data, isLoading} = useProfile();
-
+  const [showProjectManager, setShowProjectManager] = useState(false);
+  const { data, isLoading } = useProfile();
   const folders = data?.folders ?? [];
-  const tasks = folders.flatMap((folder) =>
-  (folder.tasks ?? []).map((task) => ({
-    ...task,
-    folderId: folder.id,
-    folderName: folder.name,
-    folderColor: folder.color ?? "#9CA3AF",
-  }))
-);
+  const openTask = (task?: Task) => { setEditingTask(task ?? null); setShowTaskForm(true); };
 
-  const { mutate: deleteTask } = useDeleteTask();
-
-  console.log(data, "data");
-
-  const handleEditTask = (task: Task, folderId: string) => {
-    setEditingTask(task);
-    setEditingTaskFolderId(folderId);
-    setShowTaskForm(true);
-  };
-
-  const handleTaskSave = (task: Task) => {
-    console.log("Task saved:", task);
-    setEditingTask(null);
-  };
-
-  const handleAddTask = () => {
-    setEditingTask(null);
-    setShowTaskForm(true);
-  };
-
-  const handleDeleteTask = (task: Task) => {
-    deleteTask(task.id, {
-      onSuccess: () => {
-        console.log("Task deleted:", task.id);
-      },
-      onError: () => {
-        console.error("Failed to delete task");
-      },
-    });
-  };
-
-const { mutate: updateTask } = useUpdateTask();
-
-const handleToggleTask = (
-  task: Task,
-  folderId: string,
-  COMPLETED: boolean
-) => {
-  const newStatus = COMPLETED ? "COMPLETED" : "PENDING";
-
-  updateTask({
-    id: task.id,
-    data: { status: newStatus },
-  }, {
-    onSuccess: () => {
-      console.log(`Task ${task.id} marked as ${newStatus}`);
-    },
-    onError: () => {
-      console.error("Failed to update task status");
-    },
-  });
-};
-
-
-  return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Header user={data?.user} isLoading={isLoading} />
-
-      {/* Main Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        <div className="lg:w-64 w-full border-r dark:border-gray-800">
-          <Sidebar
-            selectedFolder={selectedFolder}
-            onFolderSelect={setSelectedFolder}
-          />
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <TaskList
-            selectedFolder={selectedFolder}
-            onEditTask={handleEditTask}
-            onDeleteTask={handleDeleteTask}
-            tasks={tasks}
-            folders={folders}
-            onToggleTask={handleToggleTask}
-          />
-        </div>
-      </div>
-
-      {/* Floating Add Button */}
-      <Button
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg cursor-pointer"
-        onClick={handleAddTask}
-      >
-        <Plus className="w-6 h-6" />
-      </Button>
-
-      <TaskForm
-        open={showTaskForm}
-        onOpenChange={setShowTaskForm}
-        task={editingTask}
-        taskFolderId={editingTaskFolderId}
-        onTaskSave={handleTaskSave}
-        folders={data?.folders ?? []}
-      />
+  return <div className="min-h-screen bg-muted/30">
+    <Header user={data?.user} isLoading={isLoading} />
+    <div className="flex min-h-[calc(100vh-73px)]">
+      <aside className="hidden w-64 shrink-0 border-r bg-background lg:block"><Sidebar selectedFolder={selectedFolder} onFolderSelect={setSelectedFolder} /></aside>
+      <div className="min-w-0 flex-1"><TodayWorkspace folders={folders} onOpenTask={openTask} onManageProjects={() => setShowProjectManager(true)} /></div>
     </div>
-  );
+    <Button className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg lg:hidden" onClick={() => openTask()}><Plus className="h-6 w-6" /></Button>
+    <TaskForm open={showTaskForm} onOpenChange={setShowTaskForm} task={editingTask} taskFolderId={editingTask?.folderId ?? ""} onTaskSave={() => setEditingTask(null)} folders={folders} />
+    <FolderManager open={showProjectManager} onOpenChange={setShowProjectManager} folders={folders} onFoldersUpdate={() => undefined} />
+  </div>;
 }

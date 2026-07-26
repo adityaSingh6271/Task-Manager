@@ -31,7 +31,6 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import type { CreateTaskData, Folder, Task } from "@/types";
-import { useToast } from "@/hooks/use-toast";
 import { useCreateTask } from "@/hooks/use-create-task";
 import { useUpdateTask } from "@/hooks/useUpdateTask";
 
@@ -47,7 +46,6 @@ interface TaskFormProps {
 export function TaskForm({ open, onOpenChange, task, folders }: TaskFormProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const { toast } = useToast();
 
   const {
     register,
@@ -67,7 +65,7 @@ export function TaskForm({ open, onOpenChange, task, folders }: TaskFormProps) {
       setValue("title", task.title);
       setValue("description", task.description || "");
       setValue("priority", task.priority);
-      setValue("dueDate", task.dueDate);
+      setValue("dueDate", task.dueDate ? (typeof task.dueDate === "string" ? new Date(task.dueDate) : task.dueDate) : undefined);
       // Now task will have folderId from the TaskList component
       setValue("folderId", task.folderId);
       setTags(task.tags || []);
@@ -91,10 +89,6 @@ export function TaskForm({ open, onOpenChange, task, folders }: TaskFormProps) {
           },
         });
 
-        toast({
-          title: "Task updated",
-          description: "Your task has been updated successfully.",
-        });
       } else {
         // 🔹 Create new task
         await createTask.mutateAsync({
@@ -102,10 +96,6 @@ export function TaskForm({ open, onOpenChange, task, folders }: TaskFormProps) {
           tags,
         });
 
-        toast({
-          title: "Task created",
-          description: "Your new task has been created successfully.",
-        });
       }
 
       // cleanup
@@ -113,13 +103,7 @@ export function TaskForm({ open, onOpenChange, task, folders }: TaskFormProps) {
       reset();
       setTags([]);
       setTagInput("");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    }
+    } catch { /* Mutation hooks show the error toast. */ }
   };
 
   const addTag = () => {
@@ -242,7 +226,6 @@ export function TaskForm({ open, onOpenChange, task, folders }: TaskFormProps) {
             <Controller
               name="dueDate"
               control={control}
-              rules={{ required: "Due date is required" }}
               render={({ field, fieldState }) => (
                 <div>
                   <Popover modal={true}>
@@ -263,7 +246,7 @@ export function TaskForm({ open, onOpenChange, task, folders }: TaskFormProps) {
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={field.value}
+                        selected={field.value ?? undefined}
                         onSelect={(date) => {
                           field.onChange(date);
                         }}

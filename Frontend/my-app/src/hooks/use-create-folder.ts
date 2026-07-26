@@ -4,6 +4,8 @@ import api from "@/lib/axios";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { Folder } from "@/types";
+import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export const useCreateFolder = () => {
   const token = useSelector((state: RootState) => state.auth.token);
@@ -22,10 +24,11 @@ export const useCreateFolder = () => {
       );
       return res.data;
     },
-    onSuccess: () => {
-      // invalidate profile or folders query so UI refetches
+    onSuccess: (project) => {
       queryClient.invalidateQueries({ queryKey: ["profile", token] });
       queryClient.invalidateQueries({ queryKey: ["folders", token] });
+      toast.success("Project created", { description: `“${project.name}” is ready for tasks.` });
     },
+    onError: (error) => toast.error("Could not create project", { description: getApiErrorMessage(error) }),
   });
 };

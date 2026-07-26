@@ -5,8 +5,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { Provider } from "react-redux";
-import { store } from "@/store/store";
 import ReduxProvider from "@/providers/ReduxProvider";
 import { Providers } from "@/components/Providers";
 
@@ -29,7 +27,7 @@ export default function RootLayout({
           <Providers>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
+            defaultTheme="dark"
             enableSystem
             disableTransitionOnChange
           >

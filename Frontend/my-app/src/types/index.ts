@@ -1,9 +1,7 @@
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-}
+export type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH";
+
+export interface User { id: string; name: string; email: string; avatar?: string; }
 
 export interface Folder {
   id: string;
@@ -16,89 +14,53 @@ export interface Folder {
 export interface Task {
   id: string;
   title: string;
-  description?: string;
-  TaskStatus: "PENDING" | "IN_PROGRESS" | "COMPLETED";
-  priority: "LOW" | "MEDIUM" | "HIGH";
-  dueDate?: Date;
+  description?: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate?: string | Date | null;
   tags: string[];
   folderId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
+  isPriority?: boolean;
+  priorityOrder?: number | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
-export interface Folder {
-  id: string;
-  name: string;
-  color: string;
-  taskCount: number;
-}
-
-export interface Task {
+export interface Event {
   id: string;
   title: string;
-  description?: string;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
-  priority: "LOW" | "MEDIUM" | "HIGH";
-  dueDate?: Date;
-  tags: string[];
-  folderId: string;
-  createdAt: Date;
-  updatedAt: Date;
+  description?: string | null;
+  startAt: string;
+  endAt: string;
+  allDay: boolean;
+  folderId?: string | null;
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  folderId?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateTaskData {
   title: string;
   description?: string;
-  priority: "LOW" | "MEDIUM" | "HIGH";
-  dueDate?: Date;
-  tags: string[];
+  priority?: TaskPriority;
+  dueDate?: Date | null;
+  tags?: string[];
   folderId: string;
+  isPriority?: boolean;
+  priorityOrder?: number | null;
 }
 
-export interface RegisterData {
-  email: string;
-  // mobile?: string;
-  password: string;
-  confirmPassword: string;
-}
-
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
-export interface OTPData {
-  email: string;
-  otp?: string;
-}
-
-export interface RegisterData {
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
-export interface OTPData {
-  mobile: string;
-  otp?: string;
-}
+export interface RegisterData { email: string; password: string; confirmPassword: string; }
+export interface LoginData { email: string; password: string; }
+export interface OTPData { email: string; otp?: string; }
 
 export interface ProfileData {
   user: User;
   folders: Folder[];
-  tasks: Task[];
-  registerData?: RegisterData;
-  loginData?: LoginData;
-  otpData?: OTPData;
 }

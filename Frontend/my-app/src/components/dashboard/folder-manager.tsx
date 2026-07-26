@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,12 +15,10 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Edit, Trash2, Plus } from "lucide-react";
 import type { Folder } from "@/types";
-import { useToast } from "@/hooks/use-toast";
 import { useCreateFolder } from "@/hooks/use-create-folder";
 import { useUpdateFolder } from "@/hooks/useUpdateFolder";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
 import { useDeleteFolder } from "@/hooks/useDeleteFolder";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface FolderManagerProps {
   open: boolean;
@@ -32,11 +30,6 @@ interface FolderManagerProps {
 interface FolderFormData {
   name: string;
   color: string;
-}
-
-// For create
-interface CreateFolderPayload extends FolderFormData {
-  userId: string;
 }
 
 // For update
@@ -63,10 +56,9 @@ export function FolderManager({
 }: FolderManagerProps) {
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const { toast } = useToast();
+  const [projectToDelete, setProjectToDelete] = useState<Folder | null>(null);
   const { mutateAsync: updateFolder } = useUpdateFolder();
   const { mutateAsync: createFolder } = useCreateFolder();
-  const userId = useSelector((state: RootState) => state.auth.user?.id);
   const deleteFolderMutation = useDeleteFolder()
 
   const {
@@ -80,12 +72,12 @@ export function FolderManager({
 
   const watchedColor = watch("color", colorOptions[0]);
 
+  useEffect(() => {
+    if (open && folders.length === 0) handleAddNew();
+  }, [open, folders.length]);
+
 const onSubmit = async (data: FolderFormData) => {
   try {
-    if (!userId) {
-      throw new Error("User ID not found");
-    }
-
     if (editingFolder) {
       // Update: only send id, name, color
       const updatePayload: UpdateFolderPayload = {
@@ -94,34 +86,15 @@ const onSubmit = async (data: FolderFormData) => {
       };
       await updateFolder(updatePayload);
 
-      toast({
-        title: "Folder updated",
-        description: "Your folder has been updated successfully.",
-      });
     } else {
-      // Create: send userId + name + color
-      const createPayload: CreateFolderPayload = {
-        userId,
-        ...data,
-      };
-      await createFolder(createPayload);
+      await createFolder(data);
 
-      toast({
-        title: "Folder created",
-        description: "Your new folder has been created successfully.",
-      });
     }
 
     reset();
     setShowForm(false);
     setEditingFolder(null);
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Something went wrong. Please try again.",
-      variant: "destructive",
-    });
-  }
+  } catch { /* Mutation hooks show the error toast. */ }
 };
 
 
@@ -132,25 +105,15 @@ const onSubmit = async (data: FolderFormData) => {
     setShowForm(true);
   };
 
-const handleDelete = (folderId: string) => {
+const handleDelete = () => {
+  if (!projectToDelete) return;
   deleteFolderMutation.mutate(
-    { id: folderId },
+    { id: projectToDelete.id },
     {
       onSuccess: () => {
-        const updatedFolders = folders.filter((folder) => folder.id !== folderId);
+        const updatedFolders = folders.filter((folder) => folder.id !== projectToDelete.id);
         onFoldersUpdate(updatedFolders);
-
-        toast({
-          title: "Folder deleted",
-          description: "The folder has been deleted successfully.",
-        });
-      },
-      onError: (error) => {
-        toast({
-          title: "Error deleting folder",
-          description: error.message,
-          variant: "destructive",
-        });
+        setProjectToDelete(null);
       },
     }
   );
@@ -167,19 +130,19 @@ const handleDelete = (folderId: string) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Manage Folders</DialogTitle>
+          <DialogTitle>Manage Projects</DialogTitle>
           <DialogDescription>
-            Create, edit, or delete your task folders.
+            Create, edit, or delete the projects that organize your tasks.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">Your Folders</h3>
-            <Button className="cursor-pointer" onClick={handleAddNew}>
+            <h3 className="text-lg font-medium">Your Projects</h3>
+            {!showForm && <Button className="cursor-pointer" onClick={handleAddNew}>
               <Plus className="w-4 h-4 mr-2 cursor-pointer" />
-              Add Folder
-            </Button>
+              Add Project
+            </Button>}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -211,7 +174,8 @@ const handleDelete = (folderId: string) => {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDelete(folder.id)}
+                        aria-label={`Delete ${folder.name}`}
+                        onClick={() => setProjectToDelete(folder)}
                         className="text-red-600 hover:text-red-700 cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -228,10 +192,10 @@ const handleDelete = (folderId: string) => {
               <CardContent className="p-4">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Folder Name</Label>
+                    <Label htmlFor="name">Project name</Label>
                     <Input
                       id="name"
-                      placeholder="Enter folder name"
+                      placeholder="e.g. Product launch"
                       {...register("name", {
                         required: "Folder name is required",
                       })}
@@ -273,8 +237,8 @@ const handleDelete = (folderId: string) => {
                           ? "Updating..."
                           : "Creating..."
                         : editingFolder
-                        ? "Update Folder"
-                        : "Create Folder"}
+                        ? "Update project"
+                        : "Create project"}
                     </Button>
                     <Button
                       type="button"
@@ -294,6 +258,20 @@ const handleDelete = (folderId: string) => {
           )}
         </div>
       </DialogContent>
+      <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete “{projectToDelete?.name}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes the project and its {projectToDelete?.taskCount ?? 0} task{projectToDelete?.taskCount === 1 ? "" : "s"}. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep project</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-white hover:bg-destructive/90" onClick={handleDelete}>Delete project and tasks</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

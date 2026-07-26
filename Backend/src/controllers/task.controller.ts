@@ -1,116 +1,67 @@
-//src/controllers/task.controller.ts
-
-import { Request, Response } from "express";
+import { Response } from "express";
+import { TaskPriority, TaskStatus } from "@prisma/client";
+import { z } from "zod";
 import prisma from "../lib/prisma";
-import { TaskPriority } from "@prisma/client";
+import { AuthRequest } from "../middleware/auth.middleware";
 
-// Create task
-export const createTask = async (req: Request, res: Response) => {
+const taskInput = z.object({
+  title: z.string().trim().min(1).max(250).optional(),
+  description: z.string().max(5000).nullable().optional(),
+  priority: z.nativeEnum(TaskPriority).optional(),
+  folderId: z.string().uuid().optional(),
+  dueDate: z.string().datetime().nullable().optional(),
+  tags: z.array(z.string().trim().min(1).max(50)).max(20).optional(),
+  status: z.nativeEnum(TaskStatus).optional(),
+  isPriority: z.boolean().optional(),
+  priorityOrder: z.number().int().min(1).max(3).nullable().optional(),
+});
+
+async function ownedFolder(folderId: string, userId: string) {
+  return prisma.folder.findFirst({ where: { id: folderId, userId }, select: { id: true } });
+}
+
+export const createTask = async (req: AuthRequest, res: Response) => {
   try {
-    const {
-      title,
-      description, // optional
-      priority,
-      folderId,
-      dueDate,
-      tags, // optional
-    }: {
-      title: string;
-      description?: string;
-      status: string;
-      priority: string;
-      folderId: string;
-      dueDate: string;
-      tags?: string[];
-    } = req.body;
-
-    // Extract userId from req.user or req.body as appropriate
-    const userId = req.body.userId;
-
-    // Example Prisma create
-    const task = await prisma.task.create({
-      data: {
-        title,
-        description,
-        priority: priority as TaskPriority,
-        folderId,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
-        tags: tags ?? [],
-        userId,
-      },
-    });
-
-    res.status(201).json(task);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to create task" });
-  }
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const parsed = taskInput.extend({ title: z.string().trim().min(1).max(250), folderId: z.string().uuid() }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
+    const data = parsed.data;
+    if (!await ownedFolder(data.folderId, userId)) return res.status(404).json({ error: "Project not found" });
+    const task = await prisma.task.create({ data: {
+      title: data.title, description: data.description, priority: data.priority ?? TaskPriority.MEDIUM,
+      folderId: data.folderId, dueDate: data.dueDate ? new Date(data.dueDate) : null, tags: data.tags ?? [], userId,
+      isPriority: data.isPriority ?? false, priorityOrder: data.isPriority ? data.priorityOrder ?? 3 : null,
+    }});
+    return res.status(201).json(task);
+  } catch (error) { console.error(error); return res.status(500).json({ error: "Failed to create task" }); }
 };
 
-//update task
-
-export const updateTask = async (req: Request, res: Response) => {
+export const updateTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params; // task id from URL
-
-    const {
-      title,
-      description,
-      priority,
-      folderId,
-      dueDate,
-      tags,
-      status,
-    }: {
-      title?: string;
-      description?: string;
-      priority?: TaskPriority;
-      folderId?: string;
-      dueDate?: string;
-      tags?: string[];
-      status?: "PENDING" | "COMPLETED";
-    } = req.body;
-
-    const task = await prisma.task.update({
-      where: { id },
-      data: {
-        title,
-        description,
-        priority,
-        folderId,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
-        tags: tags ?? undefined, // leave unchanged if not provided
-        status
-      },
-    });
-
-    res.status(200).json(task);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to update task" });
-  }
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const parsed = taskInput.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
+    const task = await prisma.task.findFirst({ where: { id: req.params.id, userId }, select: { id: true } });
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    const data = parsed.data;
+    if (data.folderId && !await ownedFolder(data.folderId, userId)) return res.status(404).json({ error: "Project not found" });
+    const updated = await prisma.task.update({ where: { id: task.id }, data: {
+      ...data, dueDate: data.dueDate === undefined ? undefined : data.dueDate ? new Date(data.dueDate) : null,
+      priorityOrder: data.isPriority === false ? null : data.priorityOrder,
+    }});
+    return res.json(updated);
+  } catch (error) { console.error(error); return res.status(500).json({ error: "Failed to update task" }); }
 };
 
-
-// Delete task
-export const deleteTask = async (req: Request, res: Response) => {
+export const deleteTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params; // task id from URL
-
-    // Delete by ID
-    await prisma.task.delete({
-      where: { id },
-    });
-
-    res.status(200).json({ message: "Task deleted successfully" });
-  } catch (error: any) {
-    console.error(error);
-
-    // Prisma throws a specific error if record not found
-    if (error.code === "P2025") {
-      return res.status(404).json({ error: "Task not found" });
-    }
-
-    res.status(500).json({ error: "Failed to delete task" });
-  }
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const task = await prisma.task.findFirst({ where: { id: req.params.id, userId }, select: { id: true } });
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    await prisma.task.delete({ where: { id: task.id } });
+    return res.json({ message: "Task deleted successfully" });
+  } catch (error) { console.error(error); return res.status(500).json({ error: "Failed to delete task" }); }
 };

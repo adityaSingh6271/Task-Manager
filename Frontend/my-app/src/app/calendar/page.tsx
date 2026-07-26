@@ -1,0 +1,23 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { addDays, format, isSameDay, startOfWeek } from "date-fns";
+import { CalendarDays, Plus, Trash2 } from "lucide-react";
+import { WorkspaceShell } from "@/components/dashboard/workspace-shell";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCreateEvent, useDeleteEvent, useEvents } from "@/hooks/use-events";
+import { useProfile } from "@/hooks/useProfile";
+
+export default function CalendarPage() {
+  const { data } = useProfile(); const { data: events = [] } = useEvents(); const createEvent = useCreateEvent(); const deleteEvent = useDeleteEvent();
+  const [title, setTitle] = useState(""); const [folderId, setFolderId] = useState("");
+  const [startAt, setStartAt] = useState(() => format(new Date(), "yyyy-MM-dd'T'09:00")); const [endAt, setEndAt] = useState(() => format(new Date(), "yyyy-MM-dd'T'10:00"));
+  const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), index)), []);
+  const addEvent = async () => { if (!title.trim()) return; await createEvent.mutateAsync({ title: title.trim(), startAt: new Date(startAt).toISOString(), endAt: new Date(endAt).toISOString(), allDay: false, folderId: folderId || null }); setTitle(""); };
+  const dueTasks = data?.folders.flatMap((project) => (project.tasks ?? []).map((task) => ({ ...task, project }))) ?? [];
+  return <WorkspaceShell><main className="mx-auto max-w-7xl p-5 sm:p-8"><div className="mb-6"><p className="text-sm font-semibold text-blue-400">Calendar</p><h1 className="text-3xl font-bold">Plan your week</h1><p className="mt-1 text-muted-foreground">Events reserve time; task deadlines stay visible alongside them.</p></div><Card className="mb-6 border-blue-500/30 bg-blue-500/10"><CardContent className="grid gap-3 p-4 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add an event" /><Input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} /><Input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} /><Select value={folderId} onValueChange={setFolderId}><SelectTrigger><SelectValue placeholder="Project (optional)" /></SelectTrigger><SelectContent>{data?.folders.map((project) => <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>)}</SelectContent></Select><Button onClick={addEvent} disabled={!title.trim() || createEvent.isPending}><Plus className="mr-1 h-4 w-4" />Add event</Button></CardContent></Card><section className="grid overflow-x-auto rounded-xl border border-border bg-card" style={{ gridTemplateColumns: "repeat(7, minmax(150px, 1fr))" }}>{days.map((day) => <div key={day.toISOString()} className="min-h-[460px] border-r border-border p-3 last:border-0"><div className="mb-3"><p className="text-xs uppercase tracking-wide text-muted-foreground">{format(day, "EEE")}</p><p className={isSameDay(day, new Date()) ? "mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground" : "mt-1 text-xl font-semibold"}>{format(day, "d")}</p></div><div className="space-y-2">{events.filter((event) => isSameDay(new Date(event.startAt), day)).map((event) => <div key={event.id} className="rounded-lg border border-blue-500/30 bg-blue-500/15 p-2 text-sm"><div className="flex gap-1"><p className="min-w-0 flex-1 font-medium">{event.title}</p><Button variant="ghost" size="icon" className="h-6 w-6 text-blue-200 hover:text-destructive" aria-label={`Delete ${event.title}`} onClick={() => deleteEvent.mutate(event.id)}><Trash2 className="h-3.5 w-3.5" /></Button></div><p className="mt-1 text-xs text-blue-200">{format(new Date(event.startAt), "p")} – {format(new Date(event.endAt), "p")}</p></div>)}{dueTasks.filter((task) => task.dueDate && isSameDay(new Date(task.dueDate), day)).map((task) => <div key={task.id} className="rounded-lg border border-violet-500/30 bg-violet-500/10 p-2 text-sm"><p className="font-medium">{task.title}</p><p className="mt-1 text-xs text-violet-200">Task · {task.project.name}</p></div>)}</div></div>)}</section><div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="h-4 w-4" /><Badge className="border-blue-500/30 bg-blue-500/15 text-blue-200">Events</Badge><Badge className="border-violet-500/30 bg-violet-500/10 text-violet-200">Task due dates</Badge></div></main></WorkspaceShell>;
+}

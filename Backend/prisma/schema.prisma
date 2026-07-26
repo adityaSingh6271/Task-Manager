@@ -16,6 +16,8 @@ model User {
   avatar    String?
   folders   Folder[]
   tasks     Task[]
+  events    Event[]
+  notes     Note[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -27,6 +29,8 @@ model Folder {
   user      User     @relation(fields: [userId], references: [id])
   userId    String
   tasks     Task[]
+  events    Event[]
+  notes     Note[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -39,7 +43,9 @@ model Task {
   priority    TaskPriority @default(MEDIUM)
   dueDate     DateTime?
   tags        String[]
-  folder      Folder       @relation(fields: [folderId], references: [id])
+  isPriority  Boolean      @default(false)
+  priorityOrder Int?
+  folder      Folder       @relation(fields: [folderId], references: [id], onDelete: Cascade)
   folderId    String
   user        User?        @relation(fields: [userId], references: [id])
   userId      String?
@@ -52,6 +58,33 @@ model Otp {
   otp       String
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  allDay      Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folderId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String
+  content   String   @default("")
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folderId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 
