@@ -24,6 +24,9 @@ import { useProfile } from "@/hooks/useProfile";
 interface SidebarProps {
   selectedFolder: string | null;
   onFolderSelect: (folderId: string | null) => void;
+  mobileOpen?: boolean;
+  onMobileOpenChange?: (open: boolean) => void;
+  showMobileToggle?: boolean;
 }
 
 const navItems = [
@@ -33,35 +36,44 @@ const navItems = [
   { href: "/projects", label: "Projects", icon: Folder },
 ];
 
-export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
+export function Sidebar({ selectedFolder, onFolderSelect, mobileOpen, onMobileOpenChange, showMobileToggle = true }: SidebarProps) {
   const { data } = useProfile();
   const router = useRouter();
   const pathname = usePathname();
   const [folders, setFolders] = useState<FolderType[]>([]);
   const [search, setSearch] = useState("");
   const [showFolderManager, setShowFolderManager] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [uncontrolledSidebarOpen, setUncontrolledSidebarOpen] = useState(false);
+  const isSidebarOpen = mobileOpen ?? uncontrolledSidebarOpen;
+  const setIsSidebarOpen = (open: boolean) => {
+    if (mobileOpen === undefined) setUncontrolledSidebarOpen(open);
+    onMobileOpenChange?.(open);
+  };
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     if (data?.folders) setFolders(data.folders ?? []);
   }, [data]);
 
+  // Header-mounted sidebar: render only after the viewport has been identified
+  // as mobile, avoiding a desktop sidebar flash during hydration.
+  if (!showMobileToggle && !isMobile) return null;
+
   const filteredFolders = folders.filter((f) =>
     f.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const SidebarContent = (
-    <div className="flex h-full w-64 flex-col bg-sidebar border-r border-sidebar-border">
+    <div className="flex h-full w-72 flex-col bg-sidebar border-r border-sidebar-border">
       {/* ── Header ──────────────────────────────────── */}
       <div className="flex items-center gap-2 border-b border-sidebar-border px-4 py-3.5">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search projects…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 border-foreground/10 bg-foreground/5 pl-9 text-xs focus:border-indigo-500/40"
+            className="h-10 border-foreground/10 bg-foreground/5 pl-10 text-sm focus:border-indigo-500/40"
           />
         </div>
         {isMobile && (
@@ -77,7 +89,7 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
       {/* ── Nav items ───────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
         <div className="mb-5">
-          <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
             Workspace
           </p>
           <div className="space-y-0.5">
@@ -91,20 +103,20 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
                     router.push(href);
                     if (isMobile) setIsSidebarOpen(false);
                   }}
-                  className={`group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium transition-all duration-150 ${
                     active
                       ? "bg-indigo-500/15 text-indigo-400 shadow-sm"
                       : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                   }`}
                 >
                   <div
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all ${
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all ${
                       active
                         ? "bg-indigo-500/20 border border-indigo-500/30"
                         : "border border-transparent group-hover:border-foreground/10 group-hover:bg-foreground/5"
                     }`}
                   >
-                    <Icon className="h-3.5 w-3.5" />
+                    <Icon className="h-4 w-4" />
                   </div>
                   {label}
                   {active && (
@@ -119,7 +131,7 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
         {/* ── Projects list ──────────────────────────── */}
         <div>
           <div className="mb-1.5 flex items-center justify-between px-2">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
               Projects
             </p>
             <button
@@ -140,7 +152,7 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
           {filteredFolders.length === 0 && !search && (
             <button
               onClick={() => setShowFolderManager(true)}
-              className="mt-1 flex w-full items-center gap-2 rounded-xl border border-dashed border-foreground/10 px-3 py-3 text-xs text-muted-foreground transition-colors hover:border-indigo-500/30 hover:text-indigo-400"
+              className="mt-1 flex w-full items-center gap-2 rounded-xl border border-dashed border-foreground/10 px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-indigo-500/30 hover:text-indigo-400"
             >
               <Plus className="h-3.5 w-3.5" />
               Create your first project
@@ -157,23 +169,23 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
                     onFolderSelect(folder.id);
                     if (isMobile) setIsSidebarOpen(false);
                   }}
-                  className={`group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-all duration-150 ${
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-base transition-all duration-150 ${
                     active
                       ? "bg-foreground/8 text-foreground"
                       : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                   }`}
                 >
                   <div
-                    className="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/20"
+                    className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-black/20"
                     style={{ backgroundColor: folder.color }}
                   />
-                  <span className="min-w-0 flex-1 truncate text-left text-[13px]">
+                  <span className="min-w-0 flex-1 truncate text-left text-sm">
                     {folder.name}
                   </span>
                   {folder.taskCount > 0 && (
                     <Badge
                       variant="secondary"
-                      className="ml-auto shrink-0 rounded-full bg-foreground/8 text-[10px] font-medium text-muted-foreground"
+                      className="ml-auto shrink-0 rounded-full bg-foreground/8 text-xs font-medium text-muted-foreground"
                     >
                       {folder.taskCount}
                     </Badge>
@@ -189,9 +201,9 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
       <div className="border-t border-sidebar-border px-3 py-3">
         <button
           onClick={() => setShowFolderManager(true)}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-base text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
         >
-          <Settings className="h-4 w-4" />
+          <Settings className="h-5 w-5" />
           Manage Projects
         </button>
       </div>
@@ -201,12 +213,12 @@ export function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
   return (
     <>
       {/* Mobile toggle button */}
-      {isMobile && !isSidebarOpen && (
+      {showMobileToggle && isMobile && !isSidebarOpen && (
         <Button
           onClick={() => setIsSidebarOpen(true)}
           variant="ghost"
           size="icon"
-          className="fixed left-4 top-4 z-50 bg-card shadow-lg border border-foreground/10 md:hidden"
+          className="fixed left-4 top-[5.5rem] z-50 h-11 w-11 rounded-xl border border-foreground/10 bg-card shadow-lg md:hidden"
         >
           <Menu className="h-5 w-5" />
         </Button>

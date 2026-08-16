@@ -26,7 +26,7 @@ model Folder {
   id        String   @id @default(uuid())
   name      String
   color     String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   tasks     Task[]
   events    Event[]
@@ -47,7 +47,7 @@ model Task {
   priorityOrder Int?
   folder      Folder       @relation(fields: [folderId], references: [id], onDelete: Cascade)
   folderId    String
-  user        User?        @relation(fields: [userId], references: [id])
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -67,7 +67,7 @@ model Event {
   startAt     DateTime
   endAt       DateTime
   allDay      Boolean  @default(false)
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
   folderId    String?
@@ -79,7 +79,7 @@ model Note {
   id        String   @id @default(uuid())
   title     String
   content   String   @default("")
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
   folderId  String?

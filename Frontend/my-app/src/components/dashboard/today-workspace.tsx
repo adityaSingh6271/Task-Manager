@@ -49,16 +49,16 @@ function SectionHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-3 flex items-center justify-between">
-      <div className="flex items-center gap-2">
+    <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
         <div
-          className={`flex h-7 w-7 items-center justify-center rounded-lg ${accentColor}`}
+          className={`flex h-9 w-9 items-center justify-center rounded-xl ${accentColor}`}
         >
-          <Icon className="h-3.5 w-3.5" />
+          <Icon className="h-4 w-4" />
         </div>
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
         {count !== undefined && (
-          <span className="rounded-full bg-foreground/8 px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          <span className="rounded-full bg-foreground/8 px-2.5 py-1 text-sm font-medium text-muted-foreground">
             {count}
           </span>
         )}
@@ -88,7 +88,7 @@ function TaskRow({
   const done = task.status === "COMPLETED";
   return (
     <div
-      className={`group flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-150 ${done
+      className={`group flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-150 ${done
           ? "border-foreground/5 bg-foreground/2 opacity-60"
           : "border-foreground/8 bg-foreground/3 hover:border-foreground/12 hover:bg-foreground/5"
         }`}
@@ -100,7 +100,7 @@ function TaskRow({
       />
       <button onClick={onEdit} className="min-w-0 flex-1 text-left">
         <p
-          className={`truncate text-sm ${done
+          className={`truncate text-base ${done
               ? "line-through text-muted-foreground"
               : "font-medium text-foreground"
             }`}
@@ -112,14 +112,14 @@ function TaskRow({
             className="h-1.5 w-1.5 shrink-0 rounded-full"
             style={{ backgroundColor: task.folderColor }}
           />
-          <span className="truncate text-xs text-muted-foreground">
+          <span className="truncate text-sm text-muted-foreground">
             {task.folderName}
           </span>
           {task.dueDate && (
             <>
-              <span className="text-xs text-foreground/20">·</span>
-              <span className="flex items-center gap-1 text-xs text-violet-400">
-                <Clock className="h-2.5 w-2.5" />
+              <span className="text-sm text-foreground/20">·</span>
+              <span className="flex items-center gap-1 text-sm text-violet-400">
+                <Clock className="h-3.5 w-3.5" />
                 {format(
                   typeof task.dueDate === "string"
                     ? parseISO(task.dueDate)
@@ -135,14 +135,14 @@ function TaskRow({
         {secondaryLabel && (
           <button
             onClick={onSecondary}
-            className="rounded-lg border border-foreground/10 bg-foreground/5 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-indigo-500/30 hover:bg-indigo-500/10 hover:text-indigo-400 transition-all"
+            className="rounded-lg border border-foreground/10 bg-foreground/5 px-3 py-1.5 text-sm font-medium text-muted-foreground hover:border-indigo-500/30 hover:bg-indigo-500/10 hover:text-indigo-400 transition-all"
           >
             {secondaryLabel}
           </button>
         )}
         <button
           onClick={onAction}
-          className="rounded-lg border border-foreground/10 bg-foreground/5 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-foreground/20 hover:text-foreground transition-all"
+          className="rounded-lg border border-foreground/10 bg-foreground/5 px-3 py-1.5 text-sm font-medium text-muted-foreground hover:border-foreground/20 hover:text-foreground transition-all"
         >
           {actionLabel}
         </button>
@@ -155,11 +155,11 @@ function EmptyState({ text, cta, onCta }: { text: string; cta?: string; onCta?: 
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-foreground/10 py-8 text-center">
       <CheckCircle2 className="mb-2 h-7 w-7 text-foreground/15" />
-      <p className="text-sm text-muted-foreground">{text}</p>
+      <p className="text-base text-muted-foreground">{text}</p>
       {cta && onCta && (
         <button
           onClick={onCta}
-          className="mt-3 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+          className="mt-3 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
         >
           {cta}
         </button>
@@ -287,33 +287,33 @@ export function TodayWorkspace({
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
+    <main className="mx-auto w-full max-w-7xl p-5 sm:p-7 lg:p-9">
       {/* ─── Top strip: date + actions ─ */}
       <section className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-indigo-400">
+          <p className="text-base font-semibold text-indigo-400">
             {format(new Date(), "EEEE, MMMM d")}
           </p>
-          <h2 className="mt-0.5 text-3xl font-bold tracking-tight">
+          <h2 className="mt-1 text-4xl font-bold tracking-tight">
             Today&apos;s Workspace
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-2 text-base text-muted-foreground">
             Focus on priorities first — then handle scheduled work.
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
           <Button
             variant="outline"
-            className="border-foreground/10 bg-foreground/5 hover:bg-foreground/10"
+            className="h-11 border-foreground/10 bg-foreground/5 text-base hover:bg-foreground/10"
             onClick={onManageProjects}
           >
             Manage projects
           </Button>
           <Button
-            className="btn-gradient gap-2 rounded-xl"
+            className="btn-gradient h-11 gap-2 rounded-xl text-base"
             onClick={() => onOpenTask()}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-5 w-5" />
             New task
           </Button>
         </div>
@@ -322,8 +322,8 @@ export function TodayWorkspace({
       {/* ─── Progress + Events strip ─ */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         {/* Progress card */}
-        <div className="rounded-2xl border border-foreground/8 bg-foreground/3 p-5">
-          <div className="mb-3 flex items-center justify-between text-sm">
+        <div className="rounded-2xl border border-foreground/8 bg-foreground/3 p-6">
+          <div className="mb-3 flex items-center justify-between text-base">
             <span className="font-medium">Today&apos;s progress</span>
             <span className="font-semibold text-indigo-400">
               {doneToday}/{totalActive + doneToday} tasks
@@ -335,7 +335,7 @@ export function TodayWorkspace({
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             {progress === 100
               ? "🎉 Amazing! All done for today."
               : progress > 50
@@ -347,11 +347,11 @@ export function TodayWorkspace({
         </div>
 
         {/* Events today */}
-        <div className="rounded-2xl border border-foreground/8 bg-foreground/3 p-5">
-          <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-            <CalendarDays className="h-4 w-4 text-violet-400" />
+        <div className="rounded-2xl border border-foreground/8 bg-foreground/3 p-6">
+          <div className="mb-3 flex items-center gap-2 text-base font-medium">
+            <CalendarDays className="h-5 w-5 text-violet-400" />
             Events today
-            <Badge variant="secondary" className="rounded-full text-xs">
+            <Badge variant="secondary" className="rounded-full text-sm">
               {todayEvents.length}
             </Badge>
           </div>
@@ -360,7 +360,7 @@ export function TodayWorkspace({
               {todayEvents.slice(0, 3).map((e) => (
                 <div
                   key={e.id}
-                  className="flex items-center gap-2.5 rounded-lg border border-violet-500/20 bg-violet-500/8 px-3 py-2 text-xs"
+                  className="flex items-center gap-2.5 rounded-lg border border-violet-500/20 bg-violet-500/8 px-3 py-2.5 text-sm"
                 >
                   <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" />
                   <span className="flex-1 truncate font-medium">{e.title}</span>
@@ -370,13 +370,13 @@ export function TodayWorkspace({
                 </div>
               ))}
               {todayEvents.length > 3 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   +{todayEvents.length - 3} more events
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               No events scheduled today.{" "}
               <a href="/calendar" className="text-violet-400 hover:underline">
                 Open calendar →
@@ -387,16 +387,16 @@ export function TodayWorkspace({
       </div>
 
       {/* ─── Quick capture ─ */}
-      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-indigo-500/25 bg-indigo-500/5 p-4 sm:flex-row">
+      <div className="mb-7 flex flex-col gap-3 rounded-2xl border border-indigo-500/25 bg-indigo-500/5 p-5 sm:flex-row">
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addTask()}
           placeholder="Quick capture — what needs your attention?"
-          className="border-foreground/10 bg-foreground/5 focus:border-indigo-500/50"
+          className="h-12 border-foreground/10 bg-foreground/5 text-base focus:border-indigo-500/50"
         />
         <Select value={folderId} onValueChange={setFolderId}>
-          <SelectTrigger className="w-full border-foreground/10 bg-foreground/5 sm:w-44">
+          <SelectTrigger className="h-12 w-full border-foreground/10 bg-foreground/5 text-base sm:w-48">
             <SelectValue placeholder="Project" />
           </SelectTrigger>
           <SelectContent>
@@ -410,9 +410,9 @@ export function TodayWorkspace({
         <Button
           onClick={addTask}
           disabled={!title.trim() || createTask.isPending}
-          className="btn-gradient shrink-0 gap-1.5 rounded-xl"
+          className="btn-gradient h-12 shrink-0 gap-1.5 rounded-xl text-base"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-5 w-5" />
           Add
         </Button>
       </div>
@@ -424,7 +424,7 @@ export function TodayWorkspace({
         <div className="space-y-5">
 
           {/* Priorities */}
-          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
+          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-6">
             <SectionHeader
               icon={Star}
               title="Today's Priorities"
@@ -439,12 +439,12 @@ export function TodayWorkspace({
                     }}
                   />
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {priorities.filter(t => t.status === "COMPLETED").length}/{Math.max(priorities.length, 3)}
                 </span>
               </div>
             </SectionHeader>
-            <p className="mb-3 text-xs text-muted-foreground">
+            <p className="mb-4 text-sm text-muted-foreground">
               Choose up to 3 meaningful outcomes for today.
             </p>
             <div className="space-y-2">
@@ -470,14 +470,14 @@ export function TodayWorkspace({
           </section>
 
           {/* Scheduled today */}
-          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
+          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-6">
             <SectionHeader
               icon={CalendarDays}
               title="Scheduled Today"
               count={scheduledToday.length}
               accentColor="bg-violet-500/15 border border-violet-500/20 text-violet-400"
             />
-            <p className="mb-3 text-xs text-muted-foreground">
+            <p className="mb-4 text-sm text-muted-foreground">
               Tasks with today as their due date.
             </p>
             <div className="space-y-2">
@@ -499,7 +499,7 @@ export function TodayWorkspace({
           </section>
 
           {/* Completed (collapsible) */}
-          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
+          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-6">
             <button
               onClick={() => setShowCompleted(!showCompleted)}
               className="w-full"
@@ -536,7 +536,7 @@ export function TodayWorkspace({
               </div>
             )}
             {!showCompleted && completedTasks.length > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {completedTasks.length} task{completedTasks.length !== 1 ? "s" : ""} done — click to expand
               </p>
             )}
@@ -547,14 +547,14 @@ export function TodayWorkspace({
         <div className="space-y-5">
 
           {/* Inbox */}
-          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
+          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-6">
             <SectionHeader
               icon={Inbox}
               title="Inbox"
               count={inbox.length}
               accentColor="bg-amber-500/15 border border-amber-500/20 text-amber-400"
             />
-            <p className="mb-3 text-xs text-muted-foreground">
+            <p className="mb-4 text-sm text-muted-foreground">
               Unplanned work — decide, schedule, or let it wait.
             </p>
             <div className="space-y-2">
@@ -578,14 +578,14 @@ export function TodayWorkspace({
           </section>
 
           {/* Planning tip */}
-          <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/8 to-indigo-500/5 p-5">
+          <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/8 to-indigo-500/5 p-6">
             <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 border border-violet-500/20">
-                <Sparkles className="h-4 w-4 text-violet-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 border border-violet-500/20">
+                <Sparkles className="h-5 w-5 text-violet-400" />
               </div>
               <div>
-                <h4 className="mb-1 text-sm font-semibold">Daily planning tip</h4>
-                <p className="text-xs leading-relaxed text-muted-foreground">
+                <h4 className="mb-1 text-base font-semibold">Daily planning tip</h4>
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   Estimate less than your whole day. Leave room for messages, meetings, and the unexpected. A short focused list beats a long aspirational one.
                 </p>
               </div>
@@ -593,8 +593,8 @@ export function TodayWorkspace({
           </div>
 
           {/* How to use guide */}
-          <div className="rounded-2xl border border-foreground/8 bg-foreground/2 p-5">
-            <h4 className="mb-3 text-sm font-semibold">How Today works</h4>
+          <div className="rounded-2xl border border-foreground/8 bg-foreground/2 p-6">
+            <h4 className="mb-4 text-base font-semibold">How Today works</h4>
             <div className="space-y-3">
               {[
                 {
@@ -613,9 +613,9 @@ export function TodayWorkspace({
                   text: "Schedule work for today, then check it off when done.",
                 },
               ].map(({ step, color, text }) => (
-                <div key={step} className="flex items-start gap-3 text-xs text-muted-foreground">
+                <div key={step} className="flex items-start gap-3 text-sm text-muted-foreground">
                   <div
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${color}`}
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${color}`}
                   >
                     {step}
                   </div>

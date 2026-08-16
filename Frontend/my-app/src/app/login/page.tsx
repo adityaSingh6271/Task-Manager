@@ -179,15 +179,15 @@ export default function LoginPage() {
       </div>
 
       {/* ─── Left brand panel ──────────────────────────────── */}
-      <div className="relative hidden w-[45%] flex-col items-center justify-center overflow-hidden border-r border-foreground/5 lg:flex">
+      <div className="relative hidden w-[46%] flex-col items-center justify-center overflow-hidden border-r border-foreground/10 bg-slate-50/70 dark:bg-white/[0.02]">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-violet-600/5 to-transparent" />
         <div className="relative z-10 px-12 text-center">
           {/* Logo */}
           <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-xl pulse-ring">
             <Zap className="h-8 w-8 text-white" />
           </div>
-          <h1 className="mb-3 text-4xl font-bold tracking-tight">Jarvis</h1>
-          <p className="mb-12 text-base text-muted-foreground">
+          <h1 className="mb-4 text-5xl font-black tracking-tight">Focus on what matters.</h1>
+          <p className="mb-12 text-lg leading-8 text-muted-foreground">
             Your intelligent workspace for tasks, events, and notes.
           </p>
 
@@ -198,8 +198,8 @@ export default function LoginPage() {
               { icon: CheckCircle, text: "Priority-first daily planning" },
               { icon: Mail, text: "Integrated calendar & notes" },
             ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-3 text-sm text-muted-foreground">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15 border border-indigo-500/20">
+              <div key={text} className="flex items-center gap-3 text-base text-muted-foreground">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/20">
                   <Icon className="h-4 w-4 text-indigo-400" />
                 </div>
                 {text}
@@ -210,7 +210,7 @@ export default function LoginPage() {
       </div>
 
       {/* ─── Right form panel ──────────────────────────────── */}
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+      <div className="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-5 py-12 sm:px-8">
         {/* Mobile logo */}
         <div className="mb-8 flex items-center gap-3 lg:hidden">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600">
@@ -219,11 +219,11 @@ export default function LoginPage() {
           <span className="text-xl font-bold">Jarvis</span>
         </div>
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-xl rounded-[2rem] border border-foreground/10 bg-card p-7 shadow-2xl shadow-indigo-950/10 sm:p-10">
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h2 className="text-3xl font-black tracking-tight">Welcome back</h2>
+            <p className="mt-2 text-base text-muted-foreground">
               Sign in to continue to your workspace
             </p>
           </div>
@@ -234,7 +234,7 @@ export default function LoginPage() {
               <button
                 key={m}
                 onClick={() => { setMode(m); setOtpSent(false); }}
-                className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all duration-200 ${mode === m
+                className={`flex-1 rounded-lg py-3 text-base font-semibold transition-all duration-200 ${mode === m
                     ? "bg-indigo-500 text-white shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                   }`}
@@ -257,7 +257,7 @@ export default function LoginPage() {
                     id="login-email"
                     type="email"
                     placeholder="you@example.com"
-                    className="border-foreground/10 bg-foreground/5 pl-10 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                  className="h-12 border-foreground/10 bg-foreground/5 pl-10 text-base focus:border-indigo-500/50 focus:ring-indigo-500/20"
                     {...registerLogin("email", {
                       required: "Email is required",
                       pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: "Invalid email address" },
@@ -277,7 +277,7 @@ export default function LoginPage() {
                     id="login-password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
-                    className="border-foreground/10 bg-foreground/5 pl-10 pr-10 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                  className="h-12 border-foreground/10 bg-foreground/5 pl-10 pr-10 text-base focus:border-indigo-500/50 focus:ring-indigo-500/20"
                     {...registerLogin("password", { required: "Password is required" })}
                   />
                   <button
@@ -294,7 +294,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoginSubmitting}
-                className="btn-gradient w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                className="btn-gradient w-full flex h-12 items-center justify-center gap-2 rounded-xl text-base font-bold disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isLoginSubmitting ? (
                   <>
@@ -327,7 +327,7 @@ export default function LoginPage() {
                     type="email"
                     placeholder="you@example.com"
                     disabled={otpSent}
-                    className="border-foreground/10 bg-foreground/5 pl-10 focus:border-indigo-500/50 focus:ring-indigo-500/20 disabled:opacity-50"
+                    className="h-12 border-foreground/10 bg-foreground/5 pl-10 text-base focus:border-indigo-500/50 focus:ring-indigo-500/20 disabled:opacity-50"
                     {...registerOTP("email", {
                       required: "Email is required",
                       pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email address" },
@@ -348,7 +348,7 @@ export default function LoginPage() {
                     placeholder="Enter 6-digit code"
                     maxLength={6}
                     inputMode="numeric"
-                    className="border-foreground/10 bg-foreground/5 text-center text-xl tracking-[0.5em] focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                    className="h-14 border-foreground/10 bg-foreground/5 text-center text-xl tracking-[0.5em] focus:border-indigo-500/50 focus:ring-indigo-500/20"
                     {...registerOTP("otp", {
                       required: "Code is required",
                       pattern: { value: /^[0-9]{6}$/, message: "Enter the 6-digit code" },
@@ -361,7 +361,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isOTPSubmitting}
-                className="btn-gradient w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                className="btn-gradient w-full flex h-12 items-center justify-center gap-2 rounded-xl text-base font-bold disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isOTPSubmitting ? (
                   <>
