@@ -4,7 +4,7 @@
 
 **Jarvis** is a premium, modern task management and daily planning web application built to help you organize your work with purpose and clarity. It combines a focused daily planner, calendar events, project-linked notes, and tasks into a beautifully designed, glassmorphic workspace.
 
----
+
 
 ## ✨ Key Features
 
