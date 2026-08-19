@@ -71,6 +71,9 @@ function StepIndicator({ current }: { current: 1 | 2 }) {
 
 type Mode = "email" | "otp";
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("email");
   const [showPassword, setShowPassword] = useState(false);
@@ -106,10 +109,10 @@ export default function LoginPage() {
       dispatch(setAuth({ token: result.token, user: result.user }));
       toast({ title: "Welcome back!", description: "You have successfully signed in." });
       router.push("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid credentials. Please try again.",
+        description: getErrorMessage(error, "Invalid credentials. Please try again."),
         variant: "destructive",
       });
     }
@@ -139,10 +142,10 @@ export default function LoginPage() {
       dispatch(setAuth({ token: result.token, user: result.user }));
       toast({ title: "Welcome back!", description: "OTP verified successfully." });
       router.push("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Authentication failed",
-        description: error.message || "Please try again.",
+        description: getErrorMessage(error, "Please try again."),
         variant: "destructive",
       });
     }
@@ -159,10 +162,10 @@ export default function LoginPage() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed to resend OTP");
       toast({ title: "Code resent!", description: "Check your inbox again." });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Failed to resend code",
-        description: error.message || "Please try again later.",
+        description: getErrorMessage(error, "Please try again later."),
         variant: "destructive",
       });
     }

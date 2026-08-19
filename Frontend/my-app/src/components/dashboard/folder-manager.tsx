@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,16 @@ import type { Folder } from "@/types";
 import { useCreateFolder } from "@/hooks/use-create-folder";
 import { useUpdateFolder } from "@/hooks/useUpdateFolder";
 import { useDeleteFolder } from "@/hooks/useDeleteFolder";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FolderManagerProps {
   open: boolean;
@@ -59,7 +68,7 @@ export function FolderManager({
   const [projectToDelete, setProjectToDelete] = useState<Folder | null>(null);
   const { mutateAsync: updateFolder } = useUpdateFolder();
   const { mutateAsync: createFolder } = useCreateFolder();
-  const deleteFolderMutation = useDeleteFolder()
+  const deleteFolderMutation = useDeleteFolder();
 
   const {
     register,
@@ -72,9 +81,16 @@ export function FolderManager({
 
   const watchedColor = watch("color", colorOptions[0]);
 
+  const handleAddNew = useCallback(() => {
+    setEditingFolder(null);
+    reset();
+    setValue("color", colorOptions[0]);
+    setShowForm(true);
+  }, [reset, setValue]);
+
   useEffect(() => {
     if (open && folders.length === 0) handleAddNew();
-  }, [open, folders.length]);
+  }, [open, folders.length, handleAddNew]);
 
   const onSubmit = async (data: FolderFormData) => {
     try {
@@ -85,18 +101,17 @@ export function FolderManager({
           ...data,
         };
         await updateFolder(updatePayload);
-
       } else {
         await createFolder(data);
-
       }
 
       reset();
       setShowForm(false);
       setEditingFolder(null);
-    } catch { /* Mutation hooks show the error toast. */ }
+    } catch {
+      /* Mutation hooks show the error toast. */
+    }
   };
-
 
   const handleEdit = (folder: Folder) => {
     setEditingFolder(folder);
@@ -111,19 +126,14 @@ export function FolderManager({
       { id: projectToDelete.id },
       {
         onSuccess: () => {
-          const updatedFolders = folders.filter((folder) => folder.id !== projectToDelete.id);
+          const updatedFolders = folders.filter(
+            (folder) => folder.id !== projectToDelete.id,
+          );
           onFoldersUpdate(updatedFolders);
           setProjectToDelete(null);
         },
-      }
+      },
     );
-  }
-
-  const handleAddNew = () => {
-    setEditingFolder(null);
-    reset();
-    setValue("color", colorOptions[0]);
-    setShowForm(true);
   };
 
   return (
@@ -139,10 +149,12 @@ export function FolderManager({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-medium">Your Projects</h3>
-            {!showForm && <Button className="cursor-pointer" onClick={handleAddNew}>
-              <Plus className="w-4 h-4 mr-2 cursor-pointer" />
-              Add Project
-            </Button>}
+            {!showForm && (
+              <Button className="cursor-pointer" onClick={handleAddNew}>
+                <Plus className="w-4 h-4 mr-2 cursor-pointer" />
+                Add Project
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -214,10 +226,11 @@ export function FolderManager({
                         <button
                           key={color}
                           type="button"
-                          className={`w-8 h-8 rounded-full border-2 cursor-pointer ${watchedColor === color
+                          className={`w-8 h-8 rounded-full border-2 cursor-pointer ${
+                            watchedColor === color
                               ? "border-gray-900 dark:border-white"
                               : "border-gray-300"
-                            }`}
+                          }`}
                           style={{ backgroundColor: color }}
                           onClick={() => setValue("color", color)}
                         />
@@ -257,17 +270,30 @@ export function FolderManager({
           )}
         </div>
       </DialogContent>
-      <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+      <AlertDialog
+        open={!!projectToDelete}
+        onOpenChange={(open) => !open && setProjectToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete “{projectToDelete?.name}”?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete “{projectToDelete?.name}”?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently deletes the project and its {projectToDelete?.taskCount ?? 0} task{projectToDelete?.taskCount === 1 ? "" : "s"}. This cannot be undone.
+              This permanently deletes the project and its{" "}
+              {projectToDelete?.taskCount ?? 0} task
+              {projectToDelete?.taskCount === 1 ? "" : "s"}. This cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep project</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-white hover:bg-destructive/90" onClick={handleDelete}>Delete project and tasks</AlertDialogAction>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
+              Delete project and tasks
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

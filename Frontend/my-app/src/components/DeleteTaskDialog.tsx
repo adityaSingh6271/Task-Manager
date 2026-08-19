@@ -8,11 +8,11 @@ interface DeleteTaskDialogProps {
 
 export function DeleteTaskDialog({ taskTitle, onConfirm, onCancel }: DeleteTaskDialogProps) {
   return (
-    <AlertDialog open={true} onOpenChange={(open) => { }}>
+    <AlertDialog open={true} onOpenChange={(open) => { if (!open) onCancel(); }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Delete task "{taskTitle}"?
+            Delete task &quot;{taskTitle}&quot;?
           </AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. The task will be permanently removed

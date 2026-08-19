@@ -8,7 +8,6 @@ import {
   isSameDay,
   isSameMonth,
   isPast,
-  isFuture,
   startOfWeek,
   subWeeks,
 } from "date-fns";

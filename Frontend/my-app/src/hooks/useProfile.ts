@@ -23,7 +23,10 @@ export const useProfile = () => {
     enabled: !!token,
   });
   useEffect(() => {
-    if (query.isError) toast.error("Could not load your workspace", { description: getApiErrorMessage(query.error) });
-  }, [query.isError, query.errorUpdatedAt]);
+    if (query.isError)
+      toast.error("Could not load your workspace", {
+        description: getApiErrorMessage(query.error),
+      });
+  }, [query.isError, query.error, query.errorUpdatedAt]);
   return query;
 };

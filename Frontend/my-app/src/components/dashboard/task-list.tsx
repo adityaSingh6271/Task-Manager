@@ -34,6 +34,11 @@ interface TaskListProps {
   onToggleTask: (task: Task, folderId: string, COMPLETED: boolean) => void;
 }
 
+const parseTaskDueDate = (dueDate: Task["dueDate"]) => {
+  if (!dueDate) return undefined;
+  return dueDate instanceof Date ? dueDate : parseISO(dueDate);
+};
+
 export function TaskList({
   selectedFolder,
   onEditTask,
@@ -79,7 +84,7 @@ export function TaskList({
         const folder = folders.find((f) => f.id === task.folderId);
         return {
           ...task,
-          dueDate: task.dueDate ? parseISO(task.dueDate as any) : undefined,
+          dueDate: parseTaskDueDate(task.dueDate),
           folderName: folder?.name ?? "Unknown",
           folderColor: folder?.color ?? "#9CA3AF",
         };
@@ -89,7 +94,7 @@ export function TaskList({
     // Otherwise, use tasks extracted from folders
     return allTasksFromFolders.map((task) => ({
       ...task,
-      dueDate: task.dueDate ? parseISO(task.dueDate as any) : undefined,
+      dueDate: parseTaskDueDate(task.dueDate),
     }));
   }, [tasks, folders, allTasksFromFolders]);
 

@@ -70,6 +70,9 @@ function FieldError({ message }: { message?: string }) {
 
 /* ─── Main Page ────────────────────────────────────────────── */
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -96,10 +99,10 @@ export default function RegisterPage() {
       if (!res.ok) throw new Error(result.error || "Something went wrong");
       toast({ title: "Account created!", description: "Welcome to Jarvis. You can now sign in." });
       router.push("/login");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Registration failed",
-        description: error.message || "Please try again later.",
+        description: getErrorMessage(error, "Please try again later."),
         variant: "destructive",
       });
     }
