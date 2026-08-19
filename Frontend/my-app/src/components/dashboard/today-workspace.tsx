@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { format, isToday, parseISO } from "date-fns";
 import {
   CalendarDays,
@@ -12,8 +12,6 @@ import {
   Plus,
   Sparkles,
   Star,
-  Target,
-  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -131,7 +129,7 @@ function TaskRow({
           )}
         </div>
       </button>
-      <div className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-1.5 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
         {secondaryLabel && (
           <button
             onClick={onSecondary}
@@ -182,6 +180,7 @@ export function TodayWorkspace({
   const [title, setTitle] = useState("");
   const [folderId, setFolderId] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
+  const inboxRef = useRef<HTMLElement | null>(null);
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const { data: events = [] } = useEvents();
@@ -201,8 +200,10 @@ export function TodayWorkspace({
   );
 
   const priorities = tasks
-    .filter((t) => t.isPriority && t.status !== "COMPLETED")
+    .filter((t) => t.isPriority)
     .sort((a, b) => (a.priorityOrder ?? 99) - (b.priorityOrder ?? 99));
+
+  const openPrioritySlots = Math.max(3 - priorities.length, 0);
 
   const scheduledToday = tasks.filter(
     (t) =>
@@ -217,12 +218,11 @@ export function TodayWorkspace({
   const completedTasks = tasks.filter((t) => t.status === "COMPLETED");
 
   /* Progress bar stats */
-  const totalActive = priorities.length + scheduledToday.filter(t => t.status !== "COMPLETED").length;
-  const doneToday = [
-    ...priorities.filter((t) => t.status === "COMPLETED"),
-    ...scheduledToday.filter((t) => t.status === "COMPLETED"),
-  ].length;
-  const progress = totalActive > 0 ? Math.round((doneToday / (totalActive + doneToday)) * 100) : 0;
+  const todayFocusTasks = Array.from(
+    new Map([...priorities, ...scheduledToday].map((task) => [task.id, task])).values()
+  );
+  const doneToday = todayFocusTasks.filter((t) => t.status === "COMPLETED").length;
+  const progress = todayFocusTasks.length > 0 ? Math.round((doneToday / todayFocusTasks.length) * 100) : 0;
 
   /* Today's events */
   const todayEvents = events.filter((e) => isToday(new Date(e.startAt)));
@@ -241,17 +241,26 @@ export function TodayWorkspace({
       data: { status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED" },
     });
 
-  const makePriority = (task: Task) =>
+  const makePriority = (task: Task) => {
+    const isAdding = !task.isPriority;
+    if (isAdding && priorities.length >= 3) return;
+
     updateTask.mutate({
       id: task.id,
       data: {
-        isPriority: !task.isPriority,
-        priorityOrder: !task.isPriority ? priorities.length + 1 : null,
+        isPriority: isAdding,
+        priorityOrder: isAdding ? priorities.length + 1 : null,
       },
     });
+  };
 
   const scheduleToday = (task: Task) =>
     updateTask.mutate({ id: task.id, data: { dueDate: new Date() } });
+
+  const pickFromInbox = () => {
+    inboxRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    inboxRef.current?.focus({ preventScroll: true });
+  };
 
   /* ── Empty / no-projects state ── */
   if (!folders.length) {
@@ -326,7 +335,7 @@ export function TodayWorkspace({
           <div className="mb-3 flex items-center justify-between text-base">
             <span className="font-medium">Today&apos;s progress</span>
             <span className="font-semibold text-indigo-400">
-              {doneToday}/{totalActive + doneToday} tasks
+              {doneToday}/{todayFocusTasks.length} tasks
             </span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-foreground/8">
@@ -440,12 +449,12 @@ export function TodayWorkspace({
                   />
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  {priorities.filter(t => t.status === "COMPLETED").length}/{Math.max(priorities.length, 3)}
+                  {priorities.length}/3
                 </span>
               </div>
             </SectionHeader>
             <p className="mb-4 text-sm text-muted-foreground">
-              Choose up to 3 meaningful outcomes for today.
+              Choose up to 3 meaningful outcomes for today. {openPrioritySlots > 0 ? `${openPrioritySlots} slot${openPrioritySlots === 1 ? "" : "s"} open.` : "Your focus list is full."}
             </p>
             <div className="space-y-2">
               {priorities.length ? (
@@ -461,9 +470,9 @@ export function TodayWorkspace({
                 ))
               ) : (
                 <EmptyState
-                  text="No priorities set yet."
-                  cta="Pick from Inbox →"
-                  onCta={() => { }}
+                  text={inbox.length ? "No priorities set yet. Pick a task from Inbox to focus your day." : "No priorities set yet. Capture a task above to begin."}
+                  cta={inbox.length ? "Pick from Inbox" : undefined}
+                  onCta={inbox.length ? pickFromInbox : undefined}
                 />
               )}
             </div>
@@ -547,7 +556,7 @@ export function TodayWorkspace({
         <div className="space-y-5">
 
           {/* Inbox */}
-          <section className="rounded-2xl border border-foreground/8 bg-foreground/2 p-6">
+          <section ref={inboxRef} tabIndex={-1} className="scroll-mt-24 rounded-2xl border border-foreground/8 bg-foreground/2 p-6 outline-none">
             <SectionHeader
               icon={Inbox}
               title="Inbox"
@@ -567,7 +576,7 @@ export function TodayWorkspace({
                     actionLabel="Schedule"
                     onAction={() => scheduleToday(task)}
                     onEdit={() => onOpenTask(task)}
-                    secondaryLabel={priorities.length < 3 ? "Prioritize" : undefined}
+                    secondaryLabel={openPrioritySlots > 0 ? "Prioritize" : undefined}
                     onSecondary={() => makePriority(task)}
                   />
                 ))
@@ -592,34 +601,34 @@ export function TodayWorkspace({
             </div>
           </div>
 
-          {/* How to use guide */}
+          {/* Today summary */}
           <div className="rounded-2xl border border-foreground/8 bg-foreground/2 p-6">
-            <h4 className="mb-4 text-base font-semibold">How Today works</h4>
-            <div className="space-y-3">
+            <h4 className="mb-4 text-base font-semibold">Today at a glance</h4>
+            <div className="grid grid-cols-3 gap-3">
               {[
                 {
-                  step: "1",
+                  value: priorities.length,
+                  label: "Priorities",
                   color: "bg-indigo-500/20 text-indigo-400 border-indigo-500/25",
-                  text: "Capture new work in the quick-add bar above.",
                 },
                 {
-                  step: "2",
+                  value: inbox.length,
+                  label: "Inbox",
                   color: "bg-amber-500/20 text-amber-400 border-amber-500/25",
-                  text: "Pick up to 3 Inbox tasks and mark them as priorities.",
                 },
                 {
-                  step: "3",
+                  value: scheduledToday.length,
+                  label: "Scheduled",
                   color: "bg-violet-500/20 text-violet-400 border-violet-500/25",
-                  text: "Schedule work for today, then check it off when done.",
                 },
-              ].map(({ step, color, text }) => (
-                <div key={step} className="flex items-start gap-3 text-sm text-muted-foreground">
+              ].map(({ value, label, color }) => (
+                <div key={label} className="rounded-xl border border-foreground/8 bg-foreground/3 p-3 text-center">
                   <div
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${color}`}
+                    className={`mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full border text-sm font-bold ${color}`}
                   >
-                    {step}
+                    {value}
                   </div>
-                  <p className="mt-0.5 leading-relaxed">{text}</p>
+                  <p className="text-xs font-medium text-muted-foreground">{label}</p>
                 </div>
               ))}
             </div>
